@@ -1,0 +1,3 @@
+package com.garmentstore.common.config;
+import io.swagger.v3.oas.models.*; import io.swagger.v3.oas.models.info.Info; import io.swagger.v3.oas.models.security.*; import org.springframework.context.annotation.*;
+@Configuration public class OpenApiConfig { @Bean public OpenAPI garmentStoreOpenApi(){String scheme="bearerAuth"; return new OpenAPI().info(new Info().title("Garment Store Backend API").version("0.2.0").description("Mobile-first e-commerce garment store modular monolith API")).addSecurityItem(new SecurityRequirement().addList(scheme)).components(new Components().addSecuritySchemes(scheme,new SecurityScheme().name(scheme).type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")));}}

@@ -1,0 +1,1 @@
+package com.garmentstore.catalog.domain;public enum ProductStatus{DRAFT,ACTIVE,INACTIVE,DELETED}

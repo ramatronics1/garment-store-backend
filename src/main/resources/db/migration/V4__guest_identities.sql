@@ -1,0 +1,22 @@
+CREATE TABLE guest_identities (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    guest_session_hash VARCHAR(128) NOT NULL,
+    email VARCHAR(180) NULL,
+    mobile VARCHAR(20) NULL,
+    status VARCHAR(30) NOT NULL,
+    expires_at TIMESTAMP(6) NOT NULL,
+    merged_to_user_id BIGINT NULL,
+    merged_at TIMESTAMP(6) NULL,
+    ip_address VARCHAR(80) NULL,
+    user_agent VARCHAR(500) NULL,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_guest_identities_session_hash (guest_session_hash),
+    KEY idx_guest_identities_session_hash (guest_session_hash),
+    KEY idx_guest_identities_status_expiry (status, expires_at),
+    KEY idx_guest_identities_mobile (mobile),
+    KEY idx_guest_identities_email (email),
+    KEY idx_guest_identities_merged_user (merged_to_user_id),
+    CONSTRAINT fk_guest_identities_merged_user FOREIGN KEY (merged_to_user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

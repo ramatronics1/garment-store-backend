@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: garment-store-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: garment_store
+      MYSQL_USER: garment_user
+      MYSQL_PASSWORD: garment_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - garment_store_mysql_data:/var/lib/mysql
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+volumes:
+  garment_store_mysql_data:

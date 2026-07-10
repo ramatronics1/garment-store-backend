@@ -1,0 +1,1 @@
+package com.garmentstore.catalog.dto;public record ProductImageResponse(Long id, String mediaUrl, int displayOrder, boolean thumbnail){}

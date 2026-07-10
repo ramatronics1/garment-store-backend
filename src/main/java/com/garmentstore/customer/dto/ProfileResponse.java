@@ -1,0 +1,1 @@
+package com.garmentstore.customer.dto; public record ProfileResponse(Long userId, Long profileId, String firstName, String lastName, String fullName, String email, String mobile, boolean emailVerified, boolean mobileVerified, String profileImageUrl){}

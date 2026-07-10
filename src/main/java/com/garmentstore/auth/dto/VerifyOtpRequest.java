@@ -1,0 +1,3 @@
+package com.garmentstore.auth.dto;
+import jakarta.validation.constraints.*;
+public record VerifyOtpRequest(Long userId, @Email(message="Email must be valid") String email, @Pattern(regexp="^[6-9][0-9]{9}$",message="Mobile must be a valid 10 digit Indian mobile number") String mobile, @NotBlank(message="OTP is required") @Size(min=6,max=6,message="OTP must be 6 digits") @Pattern(regexp="^[0-9]{6}$",message="OTP must contain only digits") String otp){ @AssertTrue(message="userId or email or mobile is required") public boolean isIdentifierPresent(){return userId!=null||(email!=null&&!email.isBlank())||(mobile!=null&&!mobile.isBlank());}}
