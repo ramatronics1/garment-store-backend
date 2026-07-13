@@ -3,5 +3,6 @@ package com.garmentstore.catalog.dto;
 import com.garmentstore.catalog.domain.GenderTag;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-public record ProductSummaryResponse(Long id, String name, String slug, Long categoryId, String categoryName, GenderTag genderTag, BigDecimal mrp, BigDecimal sellingPrice, int discountPercent, String color, String thumbnailUrl){}
+public record ProductSummaryResponse(Long id, String name, String slug, Long categoryId, String categoryName, GenderTag genderTag, BigDecimal mrp, BigDecimal sellingPrice, int discountPercent, String color, String thumbnailUrl, boolean inStock, List<ProductVariantResponse> variants){}

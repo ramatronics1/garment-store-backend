@@ -91,8 +91,15 @@ public class AdminCatalogService {
     @Transactional
     public ProductVariantResponse addVariant(Long productId, AdminVariantRequest r) {
         Product p = prod(productId);
-        ProductVariant v = variants.save(ProductVariant.builder().product(p).sizeCode(r.sizeCode().trim()).skuCode(r.skuCode().trim()).active(r.active() == null || r.active()).build());
-        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive());
+        int stock = r.stockQuantity() == null ? 0 : r.stockQuantity();
+        ProductVariant v = variants.save(ProductVariant.builder()
+                .product(p)
+                .sizeCode(r.sizeCode().trim())
+                .skuCode(r.skuCode().trim())
+                .active(r.active() == null || r.active())
+                .stockQuantity(stock)
+                .build());
+        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity());
     }
 
     @Transactional
@@ -101,8 +108,9 @@ public class AdminCatalogService {
         v.setSizeCode(r.sizeCode().trim());
         v.setSkuCode(r.skuCode().trim());
         v.setActive(r.active() == null || r.active());
+        if (r.stockQuantity() != null) v.setStockQuantity(r.stockQuantity());
         v = variants.save(v);
-        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive());
+        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity());
     }
 
     @Transactional

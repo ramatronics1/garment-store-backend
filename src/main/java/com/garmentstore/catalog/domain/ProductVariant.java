@@ -23,4 +23,10 @@ public class ProductVariant {
     private String skuCode;
     @Column(name = "is_active", nullable = false)
     private boolean active;
+    /**
+     * Real-time stock quantity. Updated by admin directly.
+     * 0 = out of stock for this size. The UI uses this to disable the size button.
+     */
+    @Column(name = "stock_quantity", nullable = false)
+    private int stockQuantity;
 }

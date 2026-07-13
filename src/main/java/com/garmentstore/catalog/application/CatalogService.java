@@ -242,9 +242,13 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public ProductAvailabilityResponse getAvailability(Long id) {
         getProduct(id);
-        var s = variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(id)
-                .stream().map(ProductVariant::getSizeCode).distinct().toList();
-        return new ProductAvailabilityResponse(id, !s.isEmpty(), s, "VARIANT_ACTIVE_STATUS_ONLY_UNTIL_INVENTORY_MODULE");
+        List<ProductVariant> variantList = variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(id);
+        boolean inStock = variantList.stream().anyMatch(v -> v.getStockQuantity() > 0);
+        List<ProductAvailabilityResponse.VariantStock> variantStocks = variantList.stream()
+                .map(v -> new ProductAvailabilityResponse.VariantStock(
+                        v.getSizeCode(), v.getStockQuantity(), v.getStockQuantity() > 0))
+                .toList();
+        return new ProductAvailabilityResponse(id, inStock, variantStocks, "LIVE_STOCK");
     }
 
     // ── Mapper helpers ────────────────────────────────────────────────────────
@@ -262,11 +266,18 @@ public class CatalogService {
                 .or(() -> images.findByProductIdOrderByDisplayOrderAscIdAsc(p.getId()).stream().findFirst())
                 .map(ProductImage::getMediaUrl)
                 .orElse(null);
+        
+        List<ProductVariant> variantList = variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(p.getId());
+        boolean inStock = variantList.stream().anyMatch(v -> v.getStockQuantity() > 0);
+        List<ProductVariantResponse> variantResponses = variantList.stream()
+                .map(v -> new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity()))
+                .toList();
+
         return new ProductSummaryResponse(
                 p.getId(), p.getName(), p.getSlug(),
                 p.getCategory().getId(), p.getCategory().getName(),
                 p.getGenderTag(), p.getMrp(), p.getSellingPrice(),
-                p.getDiscountPercent(), p.getColor(), th
+                p.getDiscountPercent(), p.getColor(), th, inStock, variantResponses
         );
     }
 
@@ -283,7 +294,7 @@ public class CatalogService {
                         .map(i -> new ProductImageResponse(i.getId(), i.getMediaUrl(), i.getDisplayOrder(), i.isThumbnail()))
                         .toList(),
                 variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(p.getId()).stream()
-                        .map(v -> new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive()))
+                        .map(v -> new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity()))
                         .toList()
         );
     }
