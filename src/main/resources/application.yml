@@ -39,6 +39,12 @@ app:
       bootstrap-mobile: ${ADMIN_BOOTSTRAP_MOBILE:9999999999}
       bootstrap-name: ${ADMIN_BOOTSTRAP_NAME:Store Admin}
       bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:Admin@12345}
+  cloudinary:
+    # Format: cloudinary://api_key:api_secret@cloud_name
+    # Sign up free at https://cloudinary.com — 25 GB storage + CDN included
+    url: ${CLOUDINARY_URL:}
+    folder: ${CLOUDINARY_FOLDER:vastra/products}
+    enabled: ${CLOUDINARY_ENABLED:false}
 management:
   endpoints:
     web:
@@ -52,4 +58,3 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
-

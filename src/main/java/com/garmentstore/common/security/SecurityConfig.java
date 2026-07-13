@@ -71,6 +71,12 @@ public class SecurityConfig {
                                 "/api/v1/admin/auth/login",
                                 "/api/v1/admin/auth/refresh-token",
                                 "/api/v1/admin/auth/logout").permitAll()
+                        // Public catalog — no login required to browse products
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/products",
+                                "/api/v1/products/**",
+                                "/api/v1/categories",
+                                "/api/v1/categories/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole(SecurityConstants.ROLE_ADMIN, SecurityConstants.ROLE_SUPER_ADMIN)
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

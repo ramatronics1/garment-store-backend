@@ -11,3 +11,13 @@ logging:
   level:
     com.garmentstore: DEBUG
     org.springframework.security: INFO
+
+# ─── Cloudinary Image CDN ──────────────────────────────────────────────
+# Step 1: Sign up free at https://cloudinary.com
+# Step 2: Copy credentials from your Dashboard → API Keys
+# Step 3: Replace placeholders below and set enabled: true
+app:
+  cloudinary:
+    url: cloudinary://914171142689583:U4UvO13pXJzCJ7v0OaLWM0KA-80@niwb76bb
+    folder: vastra/products
+    enabled: true
