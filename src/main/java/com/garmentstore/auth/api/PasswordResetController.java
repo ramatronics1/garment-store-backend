@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -32,5 +34,13 @@ public class PasswordResetController {
     @PostMapping("/reset-password")
     public ApiResponse<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return ApiResponse.success("Password reset successful", passwordResetService.resetPassword(request));
+    }
+
+    @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Void> changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        Long userId = Long.valueOf(authentication.getName());
+        passwordResetService.changePassword(userId, request);
+        return ApiResponse.success("Password changed successfully", null);
     }
 }

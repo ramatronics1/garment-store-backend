@@ -112,4 +112,24 @@ public class PasswordResetService {
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
+
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BusinessException("INVALID_PASSWORD", "Current password is incorrect", HttpStatus.BAD_REQUEST);
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BusinessException("PASSWORD_REUSE_NOT_ALLOWED", "New password must be different from old password", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        int revokedCount = refreshTokenService.revokeAllForUser(user.getId());
+        auditLogService.record(user.getId(), null, "PASSWORD_CHANGE_SUCCESS", "USER", String.valueOf(user.getId()), "{\"revokedRefreshTokenCount\":" + revokedCount + "}", null);
+    }
 }
