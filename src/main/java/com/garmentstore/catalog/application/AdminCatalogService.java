@@ -8,12 +8,19 @@ import com.garmentstore.catalog.dto.ProductVariantResponse;
 import com.garmentstore.catalog.dto.admin.*;
 import com.garmentstore.catalog.infrastructure.*;
 import com.garmentstore.common.exception.BusinessException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +32,88 @@ public class AdminCatalogService {
     private final FeaturedProductRepository featured;
     private final RelatedProductMappingRepository related;
     private final CatalogService mapper;
+
+    @Transactional(readOnly = true)
+    public AdminProductPageResponse getAdminProducts(String status, String categoryParam, String gender, String q, int page, int size, String sort, String dir) {
+        Sort.Direction direction = "asc".equalsIgnoreCase(dir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String sortProperty = (sort == null || sort.isBlank()) ? "createdAt" : sort;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortProperty));
+
+        ProductStatus productStatus = null;
+        if (status != null && !status.isBlank()) {
+            try { productStatus = ProductStatus.valueOf(status.toUpperCase()); } catch (Exception ignored) {}
+        }
+        GenderTag genderTag = null;
+        if (gender != null && !gender.isBlank()) {
+            try { genderTag = GenderTag.valueOf(gender.toUpperCase()); } catch (Exception ignored) {}
+        }
+
+        ProductStatus finalStatus = productStatus;
+        GenderTag finalGender = genderTag;
+
+        Long categoryId = null;
+        String categoryText = null;
+        if (categoryParam != null && !categoryParam.isBlank()) {
+            try {
+                categoryId = Long.parseLong(categoryParam.trim());
+            } catch (NumberFormatException e) {
+                categoryText = categoryParam.trim().toLowerCase();
+            }
+        }
+        Long finalCategoryId = categoryId;
+        String finalCategoryText = categoryText;
+
+        Page<Product> paged = products.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (finalStatus != null) {
+                predicates.add(cb.equal(root.get("status"), finalStatus));
+            } else {
+                predicates.add(cb.notEqual(root.get("status"), ProductStatus.DELETED));
+            }
+            if (finalCategoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), finalCategoryId));
+            } else if (finalCategoryText != null) {
+                predicates.add(cb.or(
+                        cb.equal(cb.lower(root.get("category").get("name")), finalCategoryText),
+                        cb.equal(cb.lower(root.get("category").get("slug")), finalCategoryText)
+                ));
+            }
+            if (finalGender != null) {
+                predicates.add(cb.equal(root.get("genderTag"), finalGender));
+            }
+            if (q != null && !q.isBlank()) {
+                String pattern = "%" + q.trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("slug")), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable);
+
+        List<AdminProductListResponse> list = paged.getContent().stream().map(p -> {
+            List<ProductVariant> vars = variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(p.getId());
+            int totalStock = vars.stream().mapToInt(ProductVariant::getStockQuantity).sum();
+            String thumb = images.findByProductIdOrderByDisplayOrderAscIdAsc(p.getId()).stream()
+                    .filter(ProductImage::isThumbnail).map(ProductImage::getMediaUrl).findFirst().orElse(null);
+            return new AdminProductListResponse(
+                    p.getId(), p.getName(), p.getSlug(),
+                    p.getCategory() != null ? p.getCategory().getName() : null,
+                    p.getCategory() != null ? p.getCategory().getId() : null,
+                    p.getGenderTag(), p.getMrp(), p.getSellingPrice(), p.getDiscountPercent(),
+                    p.getStatus(), totalStock, vars.size(), thumb,
+                    p.getCreatedAt(), p.getUpdatedAt()
+            );
+        }).toList();
+
+        return new AdminProductPageResponse(list, paged.getNumber(), paged.getSize(), paged.getTotalElements(), paged.getTotalPages(), paged.isLast());
+    }
+
+    @Transactional(readOnly = true)
+    public ProductDetailResponse getAdminProductDetail(Long id) {
+        Product p = prod(id);
+        return mapper.detail(p);
+    }
 
     @Transactional
     public CategoryResponse createCategory(AdminCategoryRequest r) {
@@ -91,8 +180,9 @@ public class AdminCatalogService {
     @Transactional
     public ProductVariantResponse addVariant(Long productId, AdminVariantRequest r) {
         Product p = prod(productId);
-        ProductVariant v = variants.save(ProductVariant.builder().product(p).sizeCode(r.sizeCode().trim()).skuCode(r.skuCode().trim()).active(r.active() == null || r.active()).build());
-        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive());
+        int stock = r.stockQuantity() == null ? 0 : r.stockQuantity();
+        ProductVariant v = variants.save(ProductVariant.builder().product(p).sizeCode(r.sizeCode().trim()).skuCode(r.skuCode().trim()).active(r.active() == null || r.active()).stockQuantity(stock).build());
+        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity());
     }
 
     @Transactional
@@ -101,8 +191,9 @@ public class AdminCatalogService {
         v.setSizeCode(r.sizeCode().trim());
         v.setSkuCode(r.skuCode().trim());
         v.setActive(r.active() == null || r.active());
+        if (r.stockQuantity() != null) v.setStockQuantity(r.stockQuantity());
         v = variants.save(v);
-        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive());
+        return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity());
     }
 
     @Transactional

@@ -50,4 +50,65 @@ public class OtpToken {
     public boolean isVerified() {
         return verifiedAt != null;
     }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public String getContactIdentifier() { return contactIdentifier; }
+    public void setContactIdentifier(String contactIdentifier) { this.contactIdentifier = contactIdentifier; }
+    public OtpPurpose getPurpose() { return purpose; }
+    public void setPurpose(OtpPurpose purpose) { this.purpose = purpose; }
+    public OtpDeliveryChannel getDeliveryChannel() { return deliveryChannel; }
+    public void setDeliveryChannel(OtpDeliveryChannel deliveryChannel) { this.deliveryChannel = deliveryChannel; }
+    public String getOtpCodeHash() { return otpCodeHash; }
+    public void setOtpCodeHash(String otpCodeHash) { this.otpCodeHash = otpCodeHash; }
+    public Instant getExpiresAt() { return expiresAt; }
+    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
+    public Instant getVerifiedAt() { return verifiedAt; }
+    public void setVerifiedAt(Instant verifiedAt) { this.verifiedAt = verifiedAt; }
+    public int getAttemptCount() { return attemptCount; }
+    public void setAttemptCount(int attemptCount) { this.attemptCount = attemptCount; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    public static OtpTokenBuilder builder() {
+        return new OtpTokenBuilder();
+    }
+
+    public static class OtpTokenBuilder {
+        private Long id;
+        private User user;
+        private String contactIdentifier;
+        private OtpPurpose purpose;
+        private OtpDeliveryChannel deliveryChannel;
+        private String otpCodeHash;
+        private Instant expiresAt;
+        private Instant verifiedAt;
+        private int attemptCount;
+
+        public OtpTokenBuilder id(Long id) { this.id = id; return this; }
+        public OtpTokenBuilder user(User user) { this.user = user; return this; }
+        public OtpTokenBuilder contactIdentifier(String contactIdentifier) { this.contactIdentifier = contactIdentifier; return this; }
+        public OtpTokenBuilder purpose(OtpPurpose purpose) { this.purpose = purpose; return this; }
+        public OtpTokenBuilder deliveryChannel(OtpDeliveryChannel deliveryChannel) { this.deliveryChannel = deliveryChannel; return this; }
+        public OtpTokenBuilder otpCodeHash(String otpCodeHash) { this.otpCodeHash = otpCodeHash; return this; }
+        public OtpTokenBuilder expiresAt(Instant expiresAt) { this.expiresAt = expiresAt; return this; }
+        public OtpTokenBuilder verifiedAt(Instant verifiedAt) { this.verifiedAt = verifiedAt; return this; }
+        public OtpTokenBuilder attemptCount(int attemptCount) { this.attemptCount = attemptCount; return this; }
+
+        public OtpToken build() {
+            OtpToken token = new OtpToken();
+            token.setId(this.id);
+            token.setUser(this.user);
+            token.setContactIdentifier(this.contactIdentifier);
+            token.setPurpose(this.purpose);
+            token.setDeliveryChannel(this.deliveryChannel);
+            token.setOtpCodeHash(this.otpCodeHash);
+            token.setExpiresAt(this.expiresAt);
+            token.setVerifiedAt(this.verifiedAt);
+            token.setAttemptCount(this.attemptCount);
+            return token;
+        }
+    }
 }

@@ -91,7 +91,7 @@ public class CatalogService {
     }
 
     public ProductDetailResponse detail(Product p) {
-        return new ProductDetailResponse(p.getId(), p.getName(), p.getSlug(), cat(p.getCategory()), p.getGenderTag(), p.getMrp(), p.getSellingPrice(), p.getDiscountPercent(), p.getColor(), p.getDescription(), p.getFabricDetails(), p.getCareInstructions(), p.getCountryOfOrigin(), p.isReturnPolicyEnabled(), p.getMetaTitle(), p.getMetaDescription(), p.getStatus(), images.findByProductIdOrderByDisplayOrderAscIdAsc(p.getId()).stream().map(i -> new ProductImageResponse(i.getId(), i.getMediaUrl(), i.getDisplayOrder(), i.isThumbnail())).toList(), variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(p.getId()).stream().map(v -> new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive())).toList());
+        return new ProductDetailResponse(p.getId(), p.getName(), p.getSlug(), cat(p.getCategory()), p.getGenderTag(), p.getMrp(), p.getSellingPrice(), p.getDiscountPercent(), p.getColor(), p.getDescription(), p.getFabricDetails(), p.getCareInstructions(), p.getCountryOfOrigin(), p.isReturnPolicyEnabled(), p.getMetaTitle(), p.getMetaDescription(), p.getStatus(), images.findByProductIdOrderByDisplayOrderAscIdAsc(p.getId()).stream().map(i -> new ProductImageResponse(i.getId(), i.getMediaUrl(), i.getDisplayOrder(), i.isThumbnail())).toList(), variants.findByProductIdAndActiveTrueOrderBySizeCodeAsc(p.getId()).stream().map(v -> new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity())).toList());
     }
 
     private Sort sort(String s) {

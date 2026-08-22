@@ -1,6 +1,7 @@
 package com.garmentstore.common.security;
 
 import com.garmentstore.auth.application.*;
+import com.garmentstore.common.filter.CorrelationIdFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +38,7 @@ import java.util.List;
 })
 @RequiredArgsConstructor
 public class SecurityConfig {
+    private final CorrelationIdFilter correlationIdFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
@@ -64,6 +66,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/verify-otp",
                                 "/api/v1/auth/login",
+                                "/api/v1/auth/logout",
                                 "/api/v1/auth/refresh-token",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
@@ -73,6 +76,7 @@ public class SecurityConfig {
                                 "/api/v1/admin/auth/logout").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole(SecurityConstants.ROLE_ADMIN, SecurityConstants.ROLE_SUPER_ADMIN)
                         .anyRequest().authenticated())
+                .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

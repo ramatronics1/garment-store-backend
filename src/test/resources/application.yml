@@ -20,15 +20,15 @@ app:
       registration-expiry-minutes: 10
       max-attempts: 5
       expose-dev-otp: true
-
-app:
-  security:
-        guest-session:
-          expiry-days: 30
-        admin:
-          lockout-threshold: 5
-          bootstrap-enabled: true
-          bootstrap-email: admin@garmentstore.local
-          bootstrap-mobile: 9999999999
-          bootstrap-name: Store Admin
-          bootstrap-password: Admin@12345
+    password-reset:
+      token-expiry-minutes: 15
+      expose-dev-token: true
+    guest-session:
+      expiry-days: 30
+    admin:
+      lockout-threshold: 5
+      bootstrap-enabled: true
+      bootstrap-email: admin@garmentstore.local
+      bootstrap-mobile: 9999999999
+      bootstrap-name: Store Admin
+      bootstrap-password: Admin@12345
