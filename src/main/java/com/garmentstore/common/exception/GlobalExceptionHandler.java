@@ -14,12 +14,20 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest req) {
+        log.warn("Resource not found [{}]: {}", req.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure("Endpoint or resource not found", new ErrorDetails("NOT_FOUND", req.getRequestURI(), null)));
+    }
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex, HttpServletRequest req) {
@@ -58,6 +66,14 @@ public class GlobalExceptionHandler {
         log.warn("Access denied for request [{}]: {}", req.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.failure("Access denied", new ErrorDetails("ACCESS_DENIED", req.getRequestURI(), null)));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest req) {
+        log.warn("Data integrity violation for request [{}]: {}", req.getRequestURI(), ex.getMessage());
+        String msg = "A database constraint violation occurred. Please check that unique fields (e.g. SKU code, slug, email) are not duplicated.";
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(msg, new ErrorDetails("DATA_INTEGRITY_VIOLATION", req.getRequestURI(), null)));
     }
 
     @ExceptionHandler(Exception.class)

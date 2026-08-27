@@ -19,6 +19,7 @@ public record AdminProductListResponse(
         int totalStock,
         int variantCount,
         String thumbnailUrl,
+        String color,
         Instant createdAt,
         Instant updatedAt
 ) {}

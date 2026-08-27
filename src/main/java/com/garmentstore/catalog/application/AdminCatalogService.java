@@ -101,12 +101,19 @@ public class AdminCatalogService {
                     p.getCategory() != null ? p.getCategory().getName() : null,
                     p.getCategory() != null ? p.getCategory().getId() : null,
                     p.getGenderTag(), p.getMrp(), p.getSellingPrice(), p.getDiscountPercent(),
-                    p.getStatus(), totalStock, vars.size(), thumb,
+                    p.getStatus(), totalStock, vars.size(), thumb, p.getColor(),
                     p.getCreatedAt(), p.getUpdatedAt()
             );
         }).toList();
 
-        return new AdminProductPageResponse(list, paged.getNumber(), paged.getSize(), paged.getTotalElements(), paged.getTotalPages(), paged.isLast());
+        java.util.Map<String, Long> statusCounts = java.util.Map.of(
+                "ALL", products.countByStatusNot(ProductStatus.DELETED),
+                "ACTIVE", products.countByStatus(ProductStatus.ACTIVE),
+                "INACTIVE", products.countByStatus(ProductStatus.INACTIVE),
+                "DRAFT", products.countByStatus(ProductStatus.DRAFT)
+        );
+
+        return new AdminProductPageResponse(list, paged.getNumber(), paged.getSize(), paged.getTotalElements(), paged.getTotalPages(), paged.isLast(), statusCounts);
     }
 
     @Transactional(readOnly = true)
@@ -145,19 +152,84 @@ public class AdminCatalogService {
 
     @Transactional
     public ProductDetailResponse createProduct(AdminProductRequest r) {
-        String slug = slug(r.slug() == null || r.slug().isBlank() ? r.name() : r.slug());
-        if (products.existsBySlug(slug))
-            throw new BusinessException("PRODUCT_SLUG_EXISTS", "Product slug already exists", HttpStatus.CONFLICT);
+        // 1. Validate variant SKU uniqueness within request and against database
+        if (r.variants() != null && !r.variants().isEmpty()) {
+            java.util.Set<String> skusInReq = new java.util.HashSet<>();
+            for (AdminVariantRequest vr : r.variants()) {
+                if (vr.skuCode() == null || vr.skuCode().isBlank()) continue;
+                String sku = vr.skuCode().trim();
+                if (!skusInReq.add(sku.toUpperCase())) {
+                    throw new BusinessException("DUPLICATE_SKU_CODE", "Duplicate SKU code '" + sku + "' in request. Each variant must have a unique SKU code.", HttpStatus.CONFLICT);
+                }
+                if (variants.existsBySkuCode(sku)) {
+                    throw new BusinessException("DUPLICATE_SKU_CODE", "SKU code '" + sku + "' already exists. Please use a unique SKU code.", HttpStatus.CONFLICT);
+                }
+            }
+        }
+
+        String baseSlug = slug(r.slug() == null || r.slug().isBlank() ? r.name() : r.slug());
+        String finalSlug = baseSlug;
+        if (r.slug() != null && !r.slug().isBlank()) {
+            if (products.existsBySlug(finalSlug)) {
+                throw new BusinessException("PRODUCT_SLUG_EXISTS", "Product slug '" + finalSlug + "' already exists. Please choose a different slug.", HttpStatus.CONFLICT);
+            }
+        } else {
+            // Auto-generate unique slug if same product name already exists
+            int counter = 1;
+            while (products.existsBySlug(finalSlug)) {
+                finalSlug = baseSlug + "-" + counter++;
+            }
+        }
         Product p = fill(Product.builder().build(), r);
-        p.setSlug(slug);
-        return mapper.detail(products.save(p));
+        p.setSlug(finalSlug);
+        p = products.save(p);
+
+        // 2. Persist images if provided
+        if (r.images() != null && !r.images().isEmpty()) {
+            for (AdminImageRequest ir : r.images()) {
+                if (ir.mediaUrl() != null && !ir.mediaUrl().isBlank()) {
+                    images.save(ProductImage.builder()
+                            .product(p)
+                            .mediaUrl(ir.mediaUrl().trim())
+                            .displayOrder(ir.displayOrder() == null ? 0 : ir.displayOrder())
+                            .thumbnail(Boolean.TRUE.equals(ir.thumbnail()))
+                            .build());
+                }
+            }
+        }
+
+        // 3. Persist variants if provided
+        if (r.variants() != null && !r.variants().isEmpty()) {
+            for (AdminVariantRequest vr : r.variants()) {
+                if (vr.sizeCode() == null || vr.sizeCode().isBlank() || vr.skuCode() == null || vr.skuCode().isBlank()) {
+                    continue;
+                }
+                String sku = vr.skuCode().trim();
+                int stock = vr.stockQuantity() == null ? 0 : vr.stockQuantity();
+                variants.save(ProductVariant.builder()
+                        .product(p)
+                        .sizeCode(vr.sizeCode().trim())
+                        .skuCode(sku)
+                        .active(vr.active() == null || vr.active())
+                        .stockQuantity(stock)
+                        .build());
+            }
+        }
+
+        return mapper.detail(p);
     }
 
     @Transactional
     public ProductDetailResponse updateProduct(Long id, AdminProductRequest r) {
         Product p = prod(id);
         p = fill(p, r);
-        if (r.slug() != null && !r.slug().isBlank()) p.setSlug(slug(r.slug()));
+        if (r.slug() != null && !r.slug().isBlank()) {
+            String newSlug = slug(r.slug());
+            if (products.existsBySlugAndIdNot(newSlug, id)) {
+                throw new BusinessException("PRODUCT_SLUG_EXISTS", "Product slug '" + newSlug + "' already exists. Please choose a different slug.", HttpStatus.CONFLICT);
+            }
+            p.setSlug(newSlug);
+        }
         return mapper.detail(products.save(p));
     }
 
@@ -180,16 +252,30 @@ public class AdminCatalogService {
     @Transactional
     public ProductVariantResponse addVariant(Long productId, AdminVariantRequest r) {
         Product p = prod(productId);
+        String sku = r.skuCode().trim();
+        if (variants.existsBySkuCode(sku)) {
+            throw new BusinessException("DUPLICATE_SKU_CODE", "SKU code '" + sku + "' already exists. Please use a unique SKU code.", HttpStatus.CONFLICT);
+        }
         int stock = r.stockQuantity() == null ? 0 : r.stockQuantity();
-        ProductVariant v = variants.save(ProductVariant.builder().product(p).sizeCode(r.sizeCode().trim()).skuCode(r.skuCode().trim()).active(r.active() == null || r.active()).stockQuantity(stock).build());
+        ProductVariant v = variants.save(ProductVariant.builder()
+                .product(p)
+                .sizeCode(r.sizeCode().trim())
+                .skuCode(sku)
+                .active(r.active() == null || r.active())
+                .stockQuantity(stock)
+                .build());
         return new ProductVariantResponse(v.getId(), v.getSizeCode(), v.getSkuCode(), v.isActive(), v.getStockQuantity());
     }
 
     @Transactional
     public ProductVariantResponse updateVariant(Long id, AdminVariantRequest r) {
         ProductVariant v = variants.findById(id).orElseThrow(() -> new BusinessException("VARIANT_NOT_FOUND", "Variant not found", HttpStatus.NOT_FOUND));
+        String sku = r.skuCode().trim();
+        if (variants.existsBySkuCodeAndIdNot(sku, id)) {
+            throw new BusinessException("DUPLICATE_SKU_CODE", "SKU code '" + sku + "' already exists. Please use a unique SKU code.", HttpStatus.CONFLICT);
+        }
         v.setSizeCode(r.sizeCode().trim());
-        v.setSkuCode(r.skuCode().trim());
+        v.setSkuCode(sku);
         v.setActive(r.active() == null || r.active());
         if (r.stockQuantity() != null) v.setStockQuantity(r.stockQuantity());
         v = variants.save(v);

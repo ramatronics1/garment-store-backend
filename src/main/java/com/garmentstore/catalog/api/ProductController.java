@@ -6,6 +6,7 @@ import com.garmentstore.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -15,8 +16,19 @@ public class ProductController {
     private final CatalogService s;
 
     @GetMapping
-    public ApiResponse<PageResponse<ProductSummaryResponse>> all(@RequestParam(required = false) Long categoryId, @RequestParam(required = false) String q, @RequestParam(defaultValue = "newest") String sort, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.success("Products fetched successfully", s.getProducts(categoryId, q, page, size, sort));
+    public ApiResponse<PageResponse<ProductSummaryResponse>> all(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Integer minDiscount,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "newest") String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return ApiResponse.success("Products fetched successfully",
+                s.getProducts(categoryId, category, gender, minPrice, maxPrice, minDiscount, q, page, size, sort));
     }
 
     @GetMapping("/{id}")
