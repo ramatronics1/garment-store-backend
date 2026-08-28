@@ -1,14 +1,10 @@
-package com.garmentstore.catalog.dto;
+package com.garmentstore.catalog.dto.admin;
 
 import com.garmentstore.catalog.domain.VariantStatus;
 
 import java.math.BigDecimal;
 
-/**
- * Public-facing variant response.
- * combinationKey lets the frontend identify the exact variant to add to cart.
- */
-public record ProductVariantResponse(
+public record AdminVariantResponse(
         Long id,
         Long colorId,
         String colorName,
@@ -18,11 +14,15 @@ public record ProductVariantResponse(
         String sizeName,
         String sizeCode,
         String sku,
+        String barcode,
         BigDecimal mrp,
         BigDecimal sellingPrice,
+        BigDecimal costPrice,
         int discountPercent,
         int stockQuantity,
+        Integer weightGrams,
         String combinationKey,
         VariantStatus status,
         boolean isActive
 ) {}
+

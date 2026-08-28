@@ -3,9 +3,10 @@ package com.garmentstore.catalog.dto.admin;
 import com.garmentstore.catalog.domain.GenderTag;
 import com.garmentstore.catalog.domain.ProductStatus;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public record AdminProductRequest(
@@ -13,12 +14,11 @@ public record AdminProductRequest(
         @Size(max = 220) String slug,
         @NotNull Long categoryId,
         @NotNull GenderTag genderTag,
-        @NotNull @DecimalMin("0.0") BigDecimal mrp,
-        @NotNull @DecimalMin("0.0") BigDecimal sellingPrice,
-        @Min(0) @Max(100) Integer discountPercent,
-        String color,
+        @Size(max = 100) String brand,
         String description,
         String fabricDetails,
+        @Size(max = 80) String fit,
+        @Size(max = 80) String season,
         String careInstructions,
         String countryOfOrigin,
         Boolean returnPolicyEnabled,

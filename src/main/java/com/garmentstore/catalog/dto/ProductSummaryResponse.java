@@ -3,5 +3,25 @@ package com.garmentstore.catalog.dto;
 import com.garmentstore.catalog.domain.GenderTag;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-public record ProductSummaryResponse(Long id, String name, String slug, Long categoryId, String categoryName, GenderTag genderTag, BigDecimal mrp, BigDecimal sellingPrice, int discountPercent, String color, String thumbnailUrl){}
+/**
+ * Lightweight product summary for listing pages.
+ * priceRange = {min, max} sellingPrice across all ACTIVE variants.
+ * colorSwatches = distinct colors available across variants.
+ */
+public record ProductSummaryResponse(
+        Long id,
+        String productCode,
+        String name,
+        String slug,
+        Long categoryId,
+        String categoryName,
+        GenderTag genderTag,
+        String brand,
+        BigDecimal minSellingPrice,
+        BigDecimal maxSellingPrice,
+        BigDecimal minMrp,
+        List<ColorSwatchResponse> colorSwatches,
+        String thumbnailUrl
+) {}

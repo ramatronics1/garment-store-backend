@@ -3,9 +3,9 @@ CREATE TABLE products(id BIGINT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(200) NOT
 CREATE TABLE product_images(id BIGINT AUTO_INCREMENT PRIMARY KEY,product_id BIGINT NOT NULL,media_url VARCHAR(700) NOT NULL,display_order INT NOT NULL DEFAULT 0,is_thumbnail BOOLEAN NOT NULL DEFAULT FALSE,CONSTRAINT fk_img_prod FOREIGN KEY(product_id) REFERENCES products(id));
 CREATE TABLE product_variants(id BIGINT AUTO_INCREMENT PRIMARY KEY,product_id BIGINT NOT NULL,size_code VARCHAR(30) NOT NULL,sku_code VARCHAR(120) NOT NULL UNIQUE,is_active BOOLEAN NOT NULL DEFAULT TRUE,CONSTRAINT fk_var_prod FOREIGN KEY(product_id) REFERENCES products(id));
 CREATE TABLE featured_products(id BIGINT AUTO_INCREMENT PRIMARY KEY,product_id BIGINT NOT NULL,display_order INT NOT NULL DEFAULT 0,is_active BOOLEAN NOT NULL DEFAULT TRUE,CONSTRAINT fk_feat_prod FOREIGN KEY(product_id) REFERENCES products(id));
-Update the featured_products table to include current timestamp & update timestamp or update the entity class -
-for now - ALTER TABLE featured_products ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-          ALTER TABLE featured_products ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+-- Update the featured_products table to include current timestamp & update timestamp or update the entity class -
+-- for now - ALTER TABLE featured_products ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+--           ALTER TABLE featured_products ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 
 CREATE TABLE related_products(id BIGINT AUTO_INCREMENT PRIMARY KEY,product_id BIGINT NOT NULL,related_product_id BIGINT NOT NULL,UNIQUE KEY uk_rel_pair(product_id,related_product_id),CONSTRAINT fk_rel_prod FOREIGN KEY(product_id) REFERENCES products(id),CONSTRAINT fk_rel_related FOREIGN KEY(related_product_id) REFERENCES products(id));INSERT INTO categories(name,slug,display_order,is_active) VALUES('Men','men',1,TRUE),('Women','women',2,TRUE),('Kids','kids',3,TRUE);

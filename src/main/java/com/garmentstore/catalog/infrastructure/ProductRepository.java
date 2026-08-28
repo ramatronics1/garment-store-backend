@@ -16,6 +16,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     Optional<Product> findBySlugAndStatus(String slug, ProductStatus s);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
+    boolean existsByProductCode(String productCode);
     long countByStatus(ProductStatus status);
     long countByStatusNot(ProductStatus status);
     @Query("select p from Product p where p.status=:status and (:categoryId is null or p.category.id=:categoryId) and (:keyword is null or lower(p.name) like lower(concat('%',:keyword,'%'))) ")
