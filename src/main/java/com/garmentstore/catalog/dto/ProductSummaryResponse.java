@@ -23,5 +23,7 @@ public record ProductSummaryResponse(
         BigDecimal maxSellingPrice,
         BigDecimal minMrp,
         List<ColorSwatchResponse> colorSwatches,
-        String thumbnailUrl
+        String thumbnailUrl,
+        boolean inStock,
+        List<SizeStockResponse> sizes
 ) {}

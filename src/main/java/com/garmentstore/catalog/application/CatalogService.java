@@ -218,11 +218,23 @@ public class CatalogService {
                                 .map(c -> new ColorSwatchResponse(c.getId(), c.getName(), c.getCode(), c.getHexCode()))
                                 .toList()));
 
+        List<SizeStockResponse> sizes = activeVars.stream()
+                .collect(Collectors.groupingBy(
+                        v -> v.getSize().getSizeCode(),
+                        java.util.LinkedHashMap::new,
+                        Collectors.summingInt(ProductVariant::getStockQuantity)
+                ))
+                .entrySet().stream()
+                .map(e -> new SizeStockResponse(e.getKey(), e.getValue()))
+                .toList();
+
+        boolean inStock = activeVars.stream().anyMatch(v -> v.getStockQuantity() > 0);
+
         return new ProductSummaryResponse(
                 p.getId(), p.getProductCode(), p.getName(), p.getSlug(),
                 p.getCategory().getId(), p.getCategory().getName(),
                 p.getGenderTag(), p.getBrand(),
-                minPrice, maxPrice, minMrp, swatches, thumb);
+                minPrice, maxPrice, minMrp, swatches, thumb, inStock, sizes);
     }
 
     public ProductDetailResponse detail(Product p) {
