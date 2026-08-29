@@ -179,9 +179,12 @@ public class CatalogService {
         getProduct(id);
         List<ProductVariant> activeVariants = variants
                 .findByProductIdAndStatusOrderByColorDisplayOrderAscSizeSortOrderAsc(id, VariantStatus.ACTIVE);
-        List<String> availableSizes = activeVariants.stream()
-                .map(v -> v.getSize().getSizeCode()).distinct().toList();
-        return new ProductAvailabilityResponse(id, !activeVariants.isEmpty(), availableSizes, "OK");
+        boolean inStock = activeVariants.stream().anyMatch(v -> v.getStockQuantity() > 0);
+        List<ProductAvailabilityResponse.VariantStock> variantStocks = activeVariants.stream()
+                .map(v -> new ProductAvailabilityResponse.VariantStock(
+                        v.getSize().getSizeCode(), v.getStockQuantity(), v.getStockQuantity() > 0))
+                .toList();
+        return new ProductAvailabilityResponse(id, inStock, variantStocks, "LIVE_STOCK");
     }
 
     // =========================================================================
