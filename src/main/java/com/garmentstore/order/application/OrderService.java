@@ -19,6 +19,7 @@ import com.garmentstore.order.dto.OrderItemResponse;
 import com.garmentstore.order.dto.OrderRequest;
 import com.garmentstore.order.dto.OrderResponse;
 import com.garmentstore.order.infrastructure.OrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ import java.time.Year;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -52,6 +54,7 @@ public class OrderService {
                 .orElseThrow(() -> new BusinessException("NOT_FOUND", "Address not found", HttpStatus.NOT_FOUND));
 
         List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByAddedAtDesc(userId);
+        log.info("[Order] userId={} placing order with {} items in DB cart", userId, cartItems.size());
         if (cartItems.isEmpty()) {
             throw new BusinessException("EMPTY_CART", "Cannot place order with an empty cart", HttpStatus.BAD_REQUEST);
         }

@@ -76,6 +76,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.failure(msg, new ErrorDetails("DATA_INTEGRITY_VIOLATION", req.getRequestURI(), null)));
     }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOptimisticLockingFailure(org.springframework.dao.OptimisticLockingFailureException ex, HttpServletRequest req) {
+        log.warn("Optimistic locking failure / concurrent update for request [{}]: {}", req.getRequestURI(), ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure("The requested item was modified or deleted by another concurrent transaction.", 
+                        new ErrorDetails("CONCURRENT_MODIFICATION_CONFLICT", req.getRequestURI(), null)));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex, HttpServletRequest req) {
         log.error("Unhandled Exception during request [{}]", req.getRequestURI(), ex);

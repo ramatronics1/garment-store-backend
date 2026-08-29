@@ -83,10 +83,11 @@ public class CartService {
 
     @Transactional
     public void removeItem(Long userId, Long cartItemId) {
-        CartItem item = cartItems.findByIdAndUserId(cartItemId, userId)
-                .orElseThrow(() -> new BusinessException(
-                        "CART_ITEM_NOT_FOUND", "Cart item not found", HttpStatus.NOT_FOUND));
-        cartItems.delete(item);
+        int removedCount = cartItems.deleteByIdAndUserId(cartItemId, userId);
+        if (removedCount == 0) {
+            throw new BusinessException(
+                    "CART_ITEM_NOT_FOUND", "Cart item not found", HttpStatus.NOT_FOUND);
+        }
         log.info("[Cart] userId={} removed cartItemId={}", userId, cartItemId);
     }
 

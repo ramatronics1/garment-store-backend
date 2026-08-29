@@ -222,13 +222,7 @@ public class CatalogService {
                                 .toList()));
 
         List<SizeStockResponse> sizes = activeVars.stream()
-                .collect(Collectors.groupingBy(
-                        v -> v.getSize().getSizeCode(),
-                        java.util.LinkedHashMap::new,
-                        Collectors.summingInt(ProductVariant::getStockQuantity)
-                ))
-                .entrySet().stream()
-                .map(e -> new SizeStockResponse(e.getKey(), e.getValue()))
+                .map(v -> new SizeStockResponse(v.getId(), v.getSize().getSizeCode(), v.getStockQuantity()))
                 .toList();
 
         boolean inStock = activeVars.stream().anyMatch(v -> v.getStockQuantity() > 0);
