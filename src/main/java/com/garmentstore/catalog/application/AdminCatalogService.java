@@ -6,6 +6,7 @@ import com.garmentstore.catalog.dto.ProductDetailResponse;
 import com.garmentstore.catalog.dto.ProductImageResponse;
 import com.garmentstore.catalog.dto.admin.*;
 import com.garmentstore.catalog.infrastructure.*;
+import com.garmentstore.order.infrastructure.OrderRepository;
 import com.garmentstore.common.exception.BusinessException;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class AdminCatalogService {
     private final AttributeRepository attributes;
     private final AttributeValueRepository attributeValues;
     private final CatalogService mapper;
+    private final OrderRepository orderRepository;
 
     // =========================================================================
     // Admin product list & detail
@@ -114,6 +116,17 @@ public class AdminCatalogService {
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
 
+        List<Long> productIds = paged.getContent().stream().map(Product::getId).toList();
+        Map<Long, Integer> orderCountMap = new HashMap<>();
+        if (!productIds.isEmpty()) {
+            List<Object[]> counts = orderRepository.countOrdersByProductIds(productIds);
+            for (Object[] row : counts) {
+                Long pid = (Long) row[0];
+                Long count = (Long) row[1];
+                orderCountMap.put(pid, count != null ? count.intValue() : 0);
+            }
+        }
+
         List<AdminProductListResponse> list = new ArrayList<>(paged.getContent().stream().map(p -> {
             List<ProductVariant> vars = variants.findByProductIdOrderByColorDisplayOrderAscSizeSortOrderAsc(p.getId());
             int totalStock = vars.stream().mapToInt(ProductVariant::getStockQuantity).sum();
@@ -144,7 +157,9 @@ public class AdminCatalogService {
                     p.getCategory() != null ? p.getCategory().getId() : null,
                     p.getGenderTag(), p.getBrand(),
                     minMrp, minSellingPrice, maxDiscount,
-                    p.getStatus(), totalStock, vars.size(), thumb,
+                    p.getStatus(), totalStock, vars.size(),
+                    orderCountMap.getOrDefault(p.getId(), 0),
+                    thumb,
                     p.getCreatedAt(), p.getUpdatedAt());
         }).toList());
 
@@ -176,7 +191,8 @@ public class AdminCatalogService {
 
     @Transactional(readOnly = true)
     public ProductDetailResponse getAdminProductDetail(Long id) {
-        return mapper.detail(prod(id));
+        int orderCount = orderRepository.countOrdersByProductId(id);
+        return mapper.detail(prod(id), orderCount);
     }
 
     // =========================================================================

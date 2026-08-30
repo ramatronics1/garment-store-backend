@@ -18,8 +18,8 @@ public class DatabaseSeeder implements CommandLineRunner {
         Integer totalStock = jdbcTemplate.queryForObject("SELECT SUM(stock_quantity) FROM product_variants", Integer.class);
         if (totalStock == null || totalStock == 0) {
             log.info("Seeding random stock quantities for products...");
-            jdbcTemplate.execute("UPDATE product_variants SET stock_quantity = FLOOR(RAND() * 15 + 1) WHERE is_active = TRUE");
-            jdbcTemplate.execute("UPDATE product_variants SET stock_quantity = 0 WHERE sku_code = 'OX-BLU-S'");
+            jdbcTemplate.execute("UPDATE product_variants SET stock_quantity = FLOOR(RAND() * 15 + 1) WHERE status = 'ACTIVE'");
+            jdbcTemplate.execute("UPDATE product_variants SET stock_quantity = 0 WHERE sku = 'OX-BLU-S'");
             log.info("Stock quantities seeded successfully!");
         }
     }

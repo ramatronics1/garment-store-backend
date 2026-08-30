@@ -21,6 +21,7 @@ public record AdminProductListResponse(
         ProductStatus status,
         int totalStock,
         int variantCount,
+        int orderCount,
         String thumbnailUrl,
         Instant createdAt,
         Instant updatedAt

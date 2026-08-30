@@ -27,6 +27,7 @@ public record ProductDetailResponse(
         String metaTitle,
         String metaDescription,
         ProductStatus status,
+        int orderCount,
         List<ProductImageResponse> images,
         List<ProductVariantResponse> variants
 ) {}

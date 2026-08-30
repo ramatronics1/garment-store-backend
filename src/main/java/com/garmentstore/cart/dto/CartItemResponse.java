@@ -15,6 +15,9 @@ public record CartItemResponse(
         String gender,
         Long variantId,
         String sizeName,            // e.g. "M", "L", "XL" — from Size entity
+        String colorName,           // e.g. "White", "Black" — from Color entity
+        String colorCode,
+        String colorHex,
         String sku,                 // globally unique SKU on ProductVariant
         int stockQuantity,          // current available stock for this variant
         int quantity,               // how many in cart

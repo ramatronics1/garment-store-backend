@@ -207,7 +207,12 @@ public class CartService {
                 p.getId(), p.getName(), thumbnail,
                 p.getCategory().getName(),
                 p.getGenderTag().name(),
-                v.getId(), v.getSize().getName(), v.getSku(),
+                v.getId(),
+                v.getSize() != null ? v.getSize().getName() : null,
+                v.getColor() != null ? v.getColor().getName() : null,
+                v.getColor() != null ? v.getColor().getCode() : null,
+                v.getColor() != null ? v.getColor().getHexCode() : null,
+                v.getSku(),
                 v.getStockQuantity(), item.getQuantity(),
                 v.getSellingPrice(), v.getMrp(), v.getDiscountPercent()
         );

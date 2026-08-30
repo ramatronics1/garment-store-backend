@@ -235,6 +235,10 @@ public class CatalogService {
     }
 
     public ProductDetailResponse detail(Product p) {
+        return detail(p, 0);
+    }
+
+    public ProductDetailResponse detail(Product p, int orderCount) {
         List<ProductVariant> allVars = variants
                 .findByProductIdOrderByColorDisplayOrderAscSizeSortOrderAsc(p.getId());
 
@@ -259,7 +263,7 @@ public class CatalogService {
                 p.getDescription(), p.getFabricDetails(), p.getFit(), p.getSeason(),
                 p.getCareInstructions(), p.getCountryOfOrigin(), p.isReturnPolicyEnabled(),
                 p.getMetaTitle(), p.getMetaDescription(), p.getStatus(),
-                imageResponses, variantResponses);
+                orderCount, imageResponses, variantResponses);
     }
 
     // =========================================================================

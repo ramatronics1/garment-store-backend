@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -80,4 +81,63 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("status") OrderStatus status,
             @Param("now") Instant now
     );
+
+    // ── Product order counts ──────────────────────────────────────────────────
+    @Query("""
+        SELECT COUNT(DISTINCT o.id)
+        FROM Order o
+        JOIN o.items i
+        WHERE i.product.id = :productId AND o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+    """)
+    int countOrdersByProductId(@Param("productId") Long productId);
+
+    @Query("""
+        SELECT i.product.id, COUNT(DISTINCT o.id)
+        FROM Order o
+        JOIN o.items i
+        WHERE i.product.id IN :productIds AND o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+        GROUP BY i.product.id
+    """)
+    List<Object[]> countOrdersByProductIds(@Param("productIds") List<Long> productIds);
+
+    // ── Admin Customer aggregates (Option B: two queries per page load) ───────
+
+    /**
+     * Returns [userId, orderCount, totalSpent, lastOrderDate] for the given user IDs.
+     * Only non-CANCELLED orders contribute to totalSpent.
+     */
+    @Query("""
+        SELECT o.user.id,
+               COUNT(o.id),
+               COALESCE(SUM(CASE WHEN o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED THEN o.grandTotal ELSE 0 END), 0),
+               MAX(o.createdAt)
+        FROM Order o
+        WHERE o.user.id IN :userIds
+        GROUP BY o.user.id
+    """)
+    List<Object[]> findOrderAggregatesByUserIds(@Param("userIds") List<Long> userIds);
+
+    /**
+     * Returns [userId, genderTag, quantitySum] for the given user IDs.
+     * Used to determine each customer's favourite product category.
+     */
+    @Query("""
+        SELECT o.user.id, i.product.genderTag, COALESCE(SUM(i.quantity), 0)
+        FROM Order o
+        JOIN o.items i
+        WHERE o.user.id IN :userIds
+          AND o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+        GROUP BY o.user.id, i.product.genderTag
+    """)
+    List<Object[]> findCategoryAggregatesByUserIds(@Param("userIds") List<Long> userIds);
+
+    /**
+     * Global overview: totalRevenue sums all non-CANCELLED order grand totals.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(o.grandTotal), 0)
+        FROM Order o
+        WHERE o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+    """)
+    BigDecimal findGlobalRevenue();
 }
