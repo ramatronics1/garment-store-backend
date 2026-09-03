@@ -1,5 +1,6 @@
 package com.garmentstore.order.application;
 
+import com.garmentstore.auth.domain.User;
 import com.garmentstore.catalog.domain.ProductImage;
 import com.garmentstore.catalog.infrastructure.ProductImageRepository;
 import com.garmentstore.common.exception.BusinessException;
@@ -10,8 +11,10 @@ import com.garmentstore.order.domain.OrderStatusHistory;
 import com.garmentstore.order.dto.*;
 import com.garmentstore.order.infrastructure.OrderRepository;
 import com.garmentstore.order.infrastructure.OrderStatusHistoryRepository;
+import com.garmentstore.notification.application.event.OrderStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,7 @@ public class AdminOrderService {
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository historyRepository;
     private final ProductImageRepository productImageRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ── Allowed transitions ───────────────────────────────────────────────────
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
@@ -129,6 +133,16 @@ public class AdminOrderService {
         log.info("Admin [{}] updated order [{}] status: {} → {}",
                 adminId, orderId, order.getStatus(), request.getStatus());
 
+        // Publish event so notification module can alert the customer
+        User customer = order.getUser();
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(
+                order.getId(), order.getOrderNumber(), order.getGrandTotal(),
+                request.getStatus(),
+                customer.getId(),
+                customer.getName() != null ? customer.getName() : "Valued Customer",
+                customer.getEmail(), customer.getMobile()
+        ));
+
         return toDetail(order, history);
     }
 
@@ -163,6 +177,15 @@ public class AdminOrderService {
                 order.setUpdatedAt(Instant.now());
                 orderRepository.save(order);
                 appendHistory(order, request.getStatus(), "ADMIN", adminId, request.getNote());
+                // Notify customer of status change
+                User customer = order.getUser();
+                eventPublisher.publishEvent(new OrderStatusChangedEvent(
+                        order.getId(), order.getOrderNumber(), order.getGrandTotal(),
+                        request.getStatus(),
+                        customer.getId(),
+                        customer.getName() != null ? customer.getName() : "Valued Customer",
+                        customer.getEmail(), customer.getMobile()
+                ));
                 updatedCount++;
             } catch (BusinessException e) {
                 log.warn("Bulk update skipped order [{}]: {}", order.getId(), e.getMessage());

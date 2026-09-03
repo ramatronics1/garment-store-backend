@@ -222,7 +222,7 @@ public class CatalogService {
                                 .toList()));
 
         List<SizeStockResponse> sizes = activeVars.stream()
-                .map(v -> new SizeStockResponse(v.getId(), v.getSize().getSizeCode(), v.getStockQuantity()))
+                .map(v -> new SizeStockResponse(v.getId(), v.getSize().getSizeCode(), v.getStockQuantity(), v.getSellingPrice(), v.getMrp()))
                 .toList();
 
         boolean inStock = activeVars.stream().anyMatch(v -> v.getStockQuantity() > 0);

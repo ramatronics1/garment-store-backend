@@ -77,6 +77,12 @@ class AdminAuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(refreshBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").exists());
+
+        // Concurrent/race-condition call using the same original refresh token within 30s grace period
+        mockMvc.perform(post("/api/v1/admin/auth/refresh-token")
+                        .contentType(MediaType.APPLICATION_JSON).content(refreshBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").exists());
     }
 
     @Test
@@ -93,3 +99,4 @@ class AdminAuthControllerTest {
                 .andExpect(jsonPath("$.error.code").value("ADMIN_ACCOUNT_LOCKED"));
     }
 }
+

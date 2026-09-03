@@ -32,3 +32,9 @@ app:
       bootstrap-mobile: 9999999999
       bootstrap-name: Store Admin
       bootstrap-password: Admin@12345
+notification:
+  email:
+    enabled: false
+  sms:
+    enabled: false
+

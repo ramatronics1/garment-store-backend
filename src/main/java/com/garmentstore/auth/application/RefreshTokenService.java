@@ -48,6 +48,15 @@ public class RefreshTokenService {
 
         if (existing.getStatus() != RefreshTokenStatus.ACTIVE) {
             if (existing.getStatus() == RefreshTokenStatus.REVOKED && existing.getReplacedByTokenId() != null) {
+                // Grace Period check (30 seconds):
+                // If a token was rotated recently (within 30 seconds) due to concurrent client requests or React StrictMode,
+                // check if the replacement token is ACTIVE and rotate that replacement token instead of revoking all sessions.
+                if (existing.getRevokedAt() != null && existing.getRevokedAt().isAfter(Instant.now().minusSeconds(30))) {
+                    java.util.Optional<RefreshToken> replacementOpt = refreshTokenRepository.findById(existing.getReplacedByTokenId());
+                    if (replacementOpt.isPresent() && replacementOpt.get().getStatus() == RefreshTokenStatus.ACTIVE) {
+                        return rotateTokenEntity(replacementOpt.get(), ipAddress, userAgent);
+                    }
+                }
                 revokeAllForUserDueToTokenReuse(existing.getUser());
                 throw new BusinessException("REFRESH_TOKEN_REUSE_DETECTED", "Refresh token reuse detected. All sessions revoked.", HttpStatus.UNAUTHORIZED);
             }
@@ -59,15 +68,19 @@ public class RefreshTokenService {
             throw new BusinessException("REFRESH_TOKEN_EXPIRED", "Refresh token has expired", HttpStatus.UNAUTHORIZED);
         }
 
-        existing.setStatus(RefreshTokenStatus.REVOKED);
-        existing.setRevokedAt(Instant.now());
-        RefreshToken savedExisting = refreshTokenRepository.save(existing);
+        return rotateTokenEntity(existing, ipAddress, userAgent);
+    }
 
-        CreatedRefreshToken created = create(existing.getUser(), ipAddress, userAgent);
+    private TokenRotationResult rotateTokenEntity(RefreshToken tokenToRotate, String ipAddress, String userAgent) {
+        tokenToRotate.setStatus(RefreshTokenStatus.REVOKED);
+        tokenToRotate.setRevokedAt(Instant.now());
+        RefreshToken savedExisting = refreshTokenRepository.save(tokenToRotate);
+
+        CreatedRefreshToken created = create(tokenToRotate.getUser(), ipAddress, userAgent);
         savedExisting.setReplacedByTokenId(created.id());
         refreshTokenRepository.save(savedExisting);
 
-        return new TokenRotationResult(existing.getUser(), created.rawToken(), created.expiresAt());
+        return new TokenRotationResult(tokenToRotate.getUser(), created.rawToken(), created.expiresAt());
     }
 
     @Transactional

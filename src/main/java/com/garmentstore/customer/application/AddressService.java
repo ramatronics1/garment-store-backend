@@ -105,8 +105,6 @@ public class AddressService {
 
     private User customer(Long uid) {
         User u = users.findById(uid).orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "User not found", HttpStatus.NOT_FOUND));
-        if (u.getUserType() != UserType.CUSTOMER)
-            throw new BusinessException("CUSTOMER_ACCESS_REQUIRED", "Customer access required", HttpStatus.FORBIDDEN);
         if (u.getAccountStatus() != AccountStatus.ACTIVE)
             throw new BusinessException("ACCOUNT_NOT_ACTIVE", "Account is not active", HttpStatus.FORBIDDEN);
         return u;

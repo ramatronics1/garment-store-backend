@@ -19,8 +19,12 @@ import com.garmentstore.order.dto.OrderItemResponse;
 import com.garmentstore.order.dto.OrderRequest;
 import com.garmentstore.order.dto.OrderResponse;
 import com.garmentstore.order.infrastructure.OrderRepository;
+import com.garmentstore.notification.application.event.LowStockEvent;
+import com.garmentstore.notification.application.event.OrderPlacedEvent;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import com.garmentstore.notification.config.NotificationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +48,8 @@ public class OrderService {
     private final ProductImageRepository productImageRepository;
     
     private final SecureRandom secureRandom = new SecureRandom();
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationProperties properties;
 
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderRequest request) {
@@ -74,8 +80,18 @@ public class OrderService {
                 throw new BusinessException("INSUFFICIENT_STOCK", "Not enough stock for variant " + variant.getSku(), HttpStatus.BAD_REQUEST);
             }
             // Decrement stock
-            variant.setStockQuantity(variant.getStockQuantity() - cartItem.getQuantity());
+            int newStock = variant.getStockQuantity() - cartItem.getQuantity();
+            variant.setStockQuantity(newStock);
             productVariantRepository.save(variant);
+
+            // Alert admin if stock has dropped to or below the low-stock threshold
+            if (newStock <= properties.getLowStockThreshold()) {
+                String productName = cartItem.getProduct() != null
+                        ? cartItem.getProduct().getName() : "Unknown Product";
+                eventPublisher.publishEvent(new LowStockEvent(productName, variant.getSku(), newStock));
+                log.info("[LowStock] {} (SKU: {}) down to {} units — admin alert queued",
+                        productName, variant.getSku(), newStock);
+            }
 
             // Price is on the variant in the new schema (not on Product)
             BigDecimal price = variant.getSellingPrice();
@@ -95,6 +111,17 @@ public class OrderService {
 
         // Clear cart
         cartItemRepository.deleteByUserId(userId);
+
+        // Publish event — NotificationEventListener will trigger email/WhatsApp/in-app notifications asynchronously
+        eventPublisher.publishEvent(new OrderPlacedEvent(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getGrandTotal(),
+                user.getId(),
+                user.getName() != null ? user.getName() : "Valued Customer",
+                user.getEmail(),
+                user.getMobile()
+        ));
 
         return mapToResponse(order);
     }
