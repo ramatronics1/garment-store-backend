@@ -21,6 +21,8 @@ public class NotificationResponse {
     private boolean read;
     private Instant createdAt;
     private Long orderId;
+    private Long productId;
+    private String sku;
 
     /** Friendly display label used in UI. */
     private String displayTitle;

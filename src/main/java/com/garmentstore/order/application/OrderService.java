@@ -86,11 +86,13 @@ public class OrderService {
 
             // Alert admin if stock has dropped to or below the low-stock threshold
             if (newStock <= properties.getLowStockThreshold()) {
+                Long productId = cartItem.getProduct() != null ? cartItem.getProduct().getId()
+                        : (variant.getProduct() != null ? variant.getProduct().getId() : null);
                 String productName = cartItem.getProduct() != null
                         ? cartItem.getProduct().getName() : "Unknown Product";
-                eventPublisher.publishEvent(new LowStockEvent(productName, variant.getSku(), newStock));
-                log.info("[LowStock] {} (SKU: {}) down to {} units — admin alert queued",
-                        productName, variant.getSku(), newStock);
+                eventPublisher.publishEvent(new LowStockEvent(productId, productName, variant.getSku(), newStock));
+                log.info("[LowStock] Product ID {} - {} (SKU: {}) down to {} units — admin alert queued",
+                        productId, productName, variant.getSku(), newStock);
             }
 
             // Price is on the variant in the new schema (not on Product)

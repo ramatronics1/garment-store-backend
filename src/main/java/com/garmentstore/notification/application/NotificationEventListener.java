@@ -92,12 +92,12 @@ public class NotificationEventListener {
 
     @EventListener
     public void onLowStock(LowStockEvent event) {
-        log.info("[NotifListener] LowStock event: {} (SKU: {}) = {} units remaining",
-                event.productName(), event.sku(), event.stockRemaining());
+        log.info("[NotifListener] LowStock event: Product ID {} - {} (SKU: {}) = {} units remaining",
+                event.productId(), event.productName(), event.sku(), event.stockRemaining());
 
         resolveAdminUserId().ifPresent(adminId ->
                 notificationService.notifyAdminLowStock(
-                        adminId, event.productName(), event.sku(), event.stockRemaining()));
+                        adminId, event.productId(), event.productName(), event.sku(), event.stockRemaining()));
     }
 
     // ── Helper ─────────────────────────────────────────────────────────────────

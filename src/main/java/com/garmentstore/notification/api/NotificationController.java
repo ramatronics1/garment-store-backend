@@ -133,6 +133,8 @@ public class NotificationController {
                 .read(log.getReadAt() != null)
                 .createdAt(log.getCreatedAt())
                 .orderId(log.getOrderId())
+                .productId(log.getProductId())
+                .sku(log.getSku())
                 .displayTitle(resolveTitle(log))
                 .displayIcon(resolveIcon(log))
                 .build();

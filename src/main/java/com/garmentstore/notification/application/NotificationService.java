@@ -123,20 +123,20 @@ public class NotificationService {
      * Send admin low-stock alert (Email + WhatsApp + IN_APP).
      */
     @Async
-    public void notifyAdminLowStock(Long adminUserId, String productName, String sku, int stockRemaining) {
+    public void notifyAdminLowStock(Long adminUserId, Long productId, String productName, String sku, int stockRemaining) {
         NotificationTemplateEngine.TemplateContext ctx =
                 NotificationTemplateEngine.TemplateContext.forStock(productName, sku, stockRemaining);
 
-        sendAndLog(adminUserId, null, NotificationType.LOW_STOCK_ADMIN,
+        sendAndLog(adminUserId, null, productId, sku, NotificationType.LOW_STOCK_ADMIN,
                 NotificationChannelType.IN_APP, properties.getAdmin().getEmail(), ctx);
 
         if (properties.getAdmin().getEmail() != null && !properties.getAdmin().getEmail().isBlank()) {
-            sendAndLog(adminUserId, null, NotificationType.LOW_STOCK_ADMIN,
+            sendAndLog(adminUserId, null, productId, sku, NotificationType.LOW_STOCK_ADMIN,
                     NotificationChannelType.EMAIL, properties.getAdmin().getEmail(), ctx);
         }
 
         if (properties.getAdmin().getWhatsapp() != null && !properties.getAdmin().getWhatsapp().isBlank()) {
-            sendAndLog(adminUserId, null, NotificationType.LOW_STOCK_ADMIN,
+            sendAndLog(adminUserId, null, productId, sku, NotificationType.LOW_STOCK_ADMIN,
                     NotificationChannelType.WHATSAPP, properties.getAdmin().getWhatsapp(), ctx);
         }
     }
@@ -149,11 +149,11 @@ public class NotificationService {
         NotificationTemplateEngine.TemplateContext ctx =
                 NotificationTemplateEngine.TemplateContext.forUser(customerName);
 
-        sendAndLog(userId, null, NotificationType.WELCOME, NotificationChannelType.IN_APP,
+        sendAndLog(userId, null, null, null, NotificationType.WELCOME, NotificationChannelType.IN_APP,
                 email != null ? email : mobile, ctx);
 
         if (email != null) {
-            sendAndLog(userId, null, NotificationType.WELCOME, NotificationChannelType.EMAIL, email, ctx);
+            sendAndLog(userId, null, null, null, NotificationType.WELCOME, NotificationChannelType.EMAIL, email, ctx);
         }
     }
 
@@ -204,6 +204,12 @@ public class NotificationService {
     private void sendAndLog(Long userId, Long orderId, NotificationType type,
                             NotificationChannelType channelType, String recipient,
                             NotificationTemplateEngine.TemplateContext ctx) {
+        sendAndLog(userId, orderId, null, null, type, channelType, recipient, ctx);
+    }
+
+    private void sendAndLog(Long userId, Long orderId, Long productId, String sku, NotificationType type,
+                            NotificationChannelType channelType, String recipient,
+                            NotificationTemplateEngine.TemplateContext ctx) {
 
         NotificationTemplateEngine.NotificationContent content =
                 templateEngine.build(type, channelType, ctx);
@@ -212,6 +218,8 @@ public class NotificationService {
         NotificationLog logEntry = NotificationLog.builder()
                 .userId(userId)
                 .orderId(orderId)
+                .productId(productId)
+                .sku(sku)
                 .type(type)
                 .channel(channelType)
                 .recipient(recipient)

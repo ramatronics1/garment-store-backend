@@ -37,6 +37,14 @@ public class NotificationLog {
     @Column(name = "order_id")
     private Long orderId;
 
+    /** Product this notification is about (nullable for ORDER_PLACED, WELCOME, etc.). */
+    @Column(name = "product_id")
+    private Long productId;
+
+    /** Product variant SKU (for variant-level targeting, e.g. LOW_STOCK_ADMIN). */
+    @Column(name = "sku", length = 120)
+    private String sku;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 50)
     private NotificationType type;

@@ -8,6 +8,7 @@ package com.garmentstore.notification.application.event;
  * Email, WhatsApp, and In-App bell — all asynchronously.
  */
 public record LowStockEvent(
+        Long productId,
         String productName,
         String sku,
         int stockRemaining
