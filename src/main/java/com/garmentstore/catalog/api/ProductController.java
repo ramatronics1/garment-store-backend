@@ -23,12 +23,16 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Integer minDiscount,
+            @RequestParam(required = false) String brand,
+            @RequestParam(required = false) String fit,
+            @RequestParam(required = false) String season,
+            @RequestParam(required = false) String fabric,
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "newest") String sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size) {
         return ApiResponse.success("Products fetched successfully",
-                s.getProducts(categoryId, category, gender, minPrice, maxPrice, minDiscount, q, page, size, sort));
+                s.getProducts(categoryId, category, gender, minPrice, maxPrice, minDiscount, brand, fit, season, fabric, q, page, size, sort));
     }
 
     @GetMapping("/{id}")
@@ -49,6 +53,28 @@ public class ProductController {
     @GetMapping("/featured")
     public ApiResponse<List<ProductSummaryResponse>> featured() {
         return ApiResponse.success("Featured products fetched successfully", s.getFeaturedProducts());
+    }
+
+    /**
+     * Sale products — ACTIVE products where at least one variant has a real discount
+     * (selling_price < mrp). No separate flag; derived purely from pricing.
+     */
+    @GetMapping("/sale")
+    public ApiResponse<PageResponse<ProductSummaryResponse>> sale(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return ApiResponse.success("Sale products fetched successfully", s.getSaleProducts(page, size));
+    }
+
+    /**
+     * New Arrivals — ACTIVE products created within the last N days (default 30).
+     * Window is configurable via {@code catalog.new-arrivals.days} in application.properties.
+     */
+    @GetMapping("/new-arrivals")
+    public ApiResponse<PageResponse<ProductSummaryResponse>> newArrivals(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "12") int size) {
+        return ApiResponse.success("New arrivals fetched successfully", s.getNewArrivals(page, size));
     }
 
     @GetMapping("/{id}/size-guide")

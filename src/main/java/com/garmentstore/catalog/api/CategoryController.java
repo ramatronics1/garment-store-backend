@@ -2,6 +2,7 @@ package com.garmentstore.catalog.api;
 
 import com.garmentstore.catalog.application.CatalogService;
 import com.garmentstore.catalog.dto.CategoryResponse;
+import com.garmentstore.catalog.dto.CategoryTreeResponse;
 import com.garmentstore.catalog.dto.PageResponse;
 import com.garmentstore.catalog.dto.ProductSummaryResponse;
 import com.garmentstore.common.response.ApiResponse;
@@ -19,6 +20,16 @@ public class CategoryController {
     @GetMapping
     public ApiResponse<List<CategoryResponse>> all() {
         return ApiResponse.success("Categories fetched successfully", s.getCategories());
+    }
+
+    /**
+     * Returns the full category hierarchy as a nested tree.
+     * Each root node carries a {@code children} list with its subcategories.
+     * Used by nav menus and mega-dropdown UI components.
+     */
+    @GetMapping("/tree")
+    public ApiResponse<List<CategoryTreeResponse>> tree() {
+        return ApiResponse.success("Category tree fetched successfully", s.getCategoryTree());
     }
 
     @GetMapping("/{id}")

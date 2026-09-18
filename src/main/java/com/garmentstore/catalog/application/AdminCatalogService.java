@@ -40,6 +40,8 @@ public class AdminCatalogService {
     private final AttributeValueRepository attributeValues;
     private final CatalogService mapper;
     private final OrderRepository orderRepository;
+    private final StoreMediaRepository storeMedia;
+    private final SaleConfigRepository saleConfig;
 
     // =========================================================================
     // Admin product list & detail
@@ -210,7 +212,10 @@ public class AdminCatalogService {
         Category c = categories.save(Category.builder()
                 .name(r.name().trim()).slug(slug).parentCategory(parent)
                 .displayOrder(r.displayOrder() == null ? 0 : r.displayOrder())
-                .active(r.active() == null || r.active()).build());
+                .active(r.active() == null || r.active())
+                .thumbnailUrl(r.thumbnailUrl()).bannerUrl(r.bannerUrl())
+                .bannerAlt(r.bannerAlt()).description(r.description()).iconUrl(r.iconUrl())
+                .build());
         return mapper.cat(c);
     }
 
@@ -224,6 +229,11 @@ public class AdminCatalogService {
                         new BusinessException("PARENT_CATEGORY_NOT_FOUND", "Parent category not found", HttpStatus.NOT_FOUND)));
         c.setDisplayOrder(r.displayOrder() == null ? 0 : r.displayOrder());
         c.setActive(r.active() == null || r.active());
+        if (r.thumbnailUrl() != null) c.setThumbnailUrl(r.thumbnailUrl());
+        if (r.bannerUrl()    != null) c.setBannerUrl(r.bannerUrl());
+        if (r.bannerAlt()   != null) c.setBannerAlt(r.bannerAlt());
+        if (r.description() != null) c.setDescription(r.description());
+        if (r.iconUrl()     != null) c.setIconUrl(r.iconUrl());
         return mapper.cat(categories.save(c));
     }
 
@@ -448,11 +458,42 @@ public class AdminCatalogService {
 
     @Transactional
     public Long addFeatured(AdminFeaturedRequest r) {
+        if (featured.existsByProductId(r.productId()))
+            throw new BusinessException("FEATURED_DUPLICATE",
+                    "Product is already in the featured list", HttpStatus.CONFLICT);
         FeaturedProduct f = featured.save(FeaturedProduct.builder()
                 .product(prod(r.productId()))
                 .displayOrder(r.displayOrder() == null ? 0 : r.displayOrder())
                 .active(r.active() == null || r.active()).build());
         return f.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminFeaturedListResponse> listFeatured() {
+        return featured.findAllByOrderByDisplayOrderAscIdAsc().stream()
+                .map(f -> {
+                    Product p = f.getProduct();
+                    String thumb = mapper.resolveThumbnailUrl(p.getId());
+                    return new AdminFeaturedListResponse(
+                            f.getId(),
+                            p.getId(), p.getProductCode(), p.getName(), p.getSlug(),
+                            thumb, f.getDisplayOrder(), f.isActive(), f.getCreatedAt());
+                }).toList();
+    }
+
+    @Transactional
+    public AdminFeaturedListResponse updateFeatured(Long id, AdminFeaturedRequest r) {
+        FeaturedProduct f = featured.findById(id).orElseThrow(() ->
+                new BusinessException("FEATURED_NOT_FOUND", "Featured entry not found", HttpStatus.NOT_FOUND));
+        if (r.displayOrder() != null) f.setDisplayOrder(r.displayOrder());
+        if (r.active() != null) f.setActive(r.active());
+        f = featured.save(f);
+        Product p = f.getProduct();
+        String thumb = mapper.resolveThumbnailUrl(p.getId());
+        return new AdminFeaturedListResponse(
+                f.getId(),
+                p.getId(), p.getProductCode(), p.getName(), p.getSlug(),
+                thumb, f.getDisplayOrder(), f.isActive(), f.getCreatedAt());
     }
 
     @Transactional
@@ -592,23 +633,34 @@ public class AdminCatalogService {
     }
 
     @Transactional
-    public AttributeValue createAttributeValue(AdminAttributeValueRequest r) {
+    public AdminAttributeValueResponse createAttributeValue(AdminAttributeValueRequest r) {
         Attribute attr = attribute(r.attributeId());
         if (attributeValues.existsByAttributeIdAndValue(r.attributeId(), r.value().trim()))
             throw new BusinessException("ATTR_VALUE_EXISTS",
                     "Value '" + r.value() + "' already exists for attribute", HttpStatus.CONFLICT);
-        return attributeValues.save(AttributeValue.builder().attribute(attr).value(r.value().trim())
+        AttributeValue av = attributeValues.save(AttributeValue.builder().attribute(attr).value(r.value().trim())
                 .displayOrder(r.displayOrder() == null ? 0 : r.displayOrder()).build());
+        return toAttrValueResponse(av);
     }
 
-    @Transactional
-    public List<AttributeValue> listAttributeValues(Long attributeId) {
-        return attributeValues.findByAttributeIdOrderByDisplayOrderAsc(attributeId);
+    @Transactional(readOnly = true)
+    public List<AdminAttributeValueResponse> listAttributeValues(Long attributeId) {
+        return attributeValues.findByAttributeIdOrderByDisplayOrderAsc(attributeId)
+                .stream().map(this::toAttrValueResponse).toList();
     }
 
     @Transactional
     public void deleteAttributeValue(Long id) {
         attributeValues.deleteById(id);
+    }
+
+    private AdminAttributeValueResponse toAttrValueResponse(AttributeValue av) {
+        return new AdminAttributeValueResponse(
+                av.getId(),
+                av.getAttribute() != null ? av.getAttribute().getId() : null,
+                av.getValue(),
+                av.getDisplayOrder()
+        );
     }
 
     // =========================================================================
@@ -748,4 +800,77 @@ public class AdminCatalogService {
     private String slug(String s) {
         return s.trim().toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
     }
-}
+
+    // =========================================================================
+    // Store Media — admin CRUD
+    // =========================================================================
+
+    @Transactional(readOnly = true)
+    public List<com.garmentstore.catalog.dto.StoreMediaResponse> listStoreMedia() {
+        return storeMedia.findAllByOrderByDisplayOrderAscPlacementKeyAsc()
+                .stream().map(this::mediaResp).toList();
+    }
+
+    /**
+     * Creates or updates a store_media slot identified by its placement key.
+     * Idempotent: safe to call multiple times with the same key.
+     */
+    @Transactional
+    public com.garmentstore.catalog.dto.StoreMediaResponse upsertStoreMedia(
+            String key, com.garmentstore.catalog.dto.admin.AdminStoreMediaRequest r) {
+        com.garmentstore.catalog.domain.StoreMedia m = storeMedia.findByPlacementKey(key)
+                .orElseGet(() -> {
+                    com.garmentstore.catalog.domain.StoreMedia n = new com.garmentstore.catalog.domain.StoreMedia();
+                    n.setPlacementKey(key);
+                    return n;
+                });
+        m.setMediaUrl(r.mediaUrl());
+        if (r.altText()      != null) m.setAltText(r.altText());
+        if (r.linkUrl()      != null) m.setLinkUrl(r.linkUrl());
+        if (r.title()        != null) m.setTitle(r.title());
+        if (r.subtitle()     != null) m.setSubtitle(r.subtitle());
+        if (r.badgeText()    != null) m.setBadgeText(r.badgeText());
+        if (r.active()       != null) m.setActive(r.active());
+        if (r.displayOrder() != null) m.setDisplayOrder(r.displayOrder());
+        return mediaResp(storeMedia.save(m));
+    }
+
+    // =========================================================================
+    // Sale Config — admin update
+    // =========================================================================
+
+    @Transactional(readOnly = true)
+    public com.garmentstore.catalog.dto.SaleConfigResponse getAdminSaleConfig() {
+        return saleConfig.findFirstByOrderByIdAsc().map(this::saleResp).orElse(null);
+    }
+
+    @Transactional
+    public com.garmentstore.catalog.dto.SaleConfigResponse updateSaleConfig(
+            com.garmentstore.catalog.dto.admin.AdminSaleConfigRequest r) {
+        com.garmentstore.catalog.domain.SaleConfig sc = saleConfig.findFirstByOrderByIdAsc()
+                .orElseGet(com.garmentstore.catalog.domain.SaleConfig::new);
+        if (r.active()    != null) sc.setActive(r.active());
+        if (r.title()     != null) sc.setTitle(r.title());
+        if (r.subtitle()  != null) sc.setSubtitle(r.subtitle());
+        if (r.endsAt()    != null) sc.setEndsAt(r.endsAt());
+        if (r.badgeText() != null) sc.setBadgeText(r.badgeText());
+        if (r.linkUrl()   != null) sc.setLinkUrl(r.linkUrl());
+        if (r.mediaUrl()  != null) sc.setMediaUrl(r.mediaUrl());
+        return saleResp(saleConfig.save(sc));
+    }
+
+    private com.garmentstore.catalog.dto.StoreMediaResponse mediaResp(
+            com.garmentstore.catalog.domain.StoreMedia m) {
+        return new com.garmentstore.catalog.dto.StoreMediaResponse(
+                m.getId(), m.getPlacementKey(), m.getMediaUrl(), m.getAltText(),
+                m.getLinkUrl(), m.getTitle(), m.getSubtitle(), m.getBadgeText(),
+                m.isActive(), m.getDisplayOrder());
+    }
+
+    private com.garmentstore.catalog.dto.SaleConfigResponse saleResp(
+            com.garmentstore.catalog.domain.SaleConfig sc) {
+        return new com.garmentstore.catalog.dto.SaleConfigResponse(
+                sc.getId(), sc.isActive(), sc.getTitle(), sc.getSubtitle(),
+                sc.getEndsAt(), sc.getBadgeText(), sc.getLinkUrl(), sc.getMediaUrl());
+    }
+}

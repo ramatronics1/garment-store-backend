@@ -10,6 +10,15 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     List<Category> findByActiveTrueOrderByDisplayOrderAscNameAsc();
 
+    /** All active root (top-level) categories — used as entry points for tree building. */
+    List<Category> findByParentCategoryIsNullAndActiveTrueOrderByDisplayOrderAscNameAsc();
+
+    /** All active children of a given parent — used for recursive tree construction. */
+    List<Category> findByParentCategoryIdAndActiveTrueOrderByDisplayOrderAscNameAsc(Long parentId);
+
+    /** Fetch all active categories whose ID is in the given set — used for subcategory filtering. */
+    List<Category> findByIdInAndActiveTrue(List<Long> ids);
+
     boolean existsBySlug(String slug);
 
     /**

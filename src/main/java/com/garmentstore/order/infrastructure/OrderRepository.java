@@ -140,4 +140,71 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         WHERE o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
     """)
     BigDecimal findGlobalRevenue();
+
+    // ── Admin Dashboard Queries ───────────────────────────────────────────────
+
+    /**
+     * Aggregate order count and revenue in a given time window for non-cancelled orders.
+     * Returns a 1-row list with [Long count, BigDecimal revenue].
+     */
+    @Query("""
+        SELECT COUNT(o), COALESCE(SUM(CASE WHEN o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED THEN o.grandTotal ELSE 0 END), 0)
+        FROM Order o
+        WHERE o.createdAt >= :start AND o.createdAt < :end
+    """)
+    List<Object[]> getOrderSummaryBetween(@Param("start") Instant start, @Param("end") Instant end);
+
+    /**
+     * Fetch recent orders eagerly loaded with user, address, and items for the admin feed.
+     */
+    @Query("""
+        SELECT DISTINCT o FROM Order o
+        LEFT JOIN FETCH o.user u
+        LEFT JOIN FETCH o.address a
+        LEFT JOIN FETCH o.items i
+        ORDER BY o.createdAt DESC
+    """)
+    List<Order> findRecentOrdersWithDetails(Pageable pageable);
+
+    /**
+     * Fetch raw createdAt and grandTotal for non-cancelled orders since a given threshold.
+     */
+    @Query("""
+        SELECT o.createdAt, o.grandTotal
+        FROM Order o
+        WHERE o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+          AND o.createdAt >= :since
+        ORDER BY o.createdAt ASC
+    """)
+    List<Object[]> findRevenueChartDataSince(@Param("since") Instant since);
+
+    /**
+     * Top selling products by revenue and units sold (non-cancelled orders).
+     * Returns [Long productId, Long totalUnitsSold, BigDecimal totalRevenue]
+     */
+    @Query("""
+        SELECT i.product.id, SUM(i.quantity), SUM(i.price * CAST(i.quantity AS bigdecimal))
+        FROM OrderItem i
+        JOIN i.order o
+        WHERE o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+        GROUP BY i.product.id
+        ORDER BY SUM(i.price * CAST(i.quantity AS bigdecimal)) DESC
+    """)
+    List<Object[]> findTopSellingProductAggregates(Pageable pageable);
+
+    /**
+     * Category revenue and order counts for non-cancelled orders.
+     * Returns [Long categoryId, BigDecimal totalRevenue, Long orderCount]
+     */
+    @Query("""
+        SELECT p.category.id, SUM(i.price * CAST(i.quantity AS bigdecimal)), COUNT(DISTINCT o.id)
+        FROM OrderItem i
+        JOIN i.order o
+        JOIN i.product p
+        WHERE o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+          AND p.category IS NOT NULL
+        GROUP BY p.category.id
+    """)
+    List<Object[]> findCategoryRevenueAggregates();
 }
+

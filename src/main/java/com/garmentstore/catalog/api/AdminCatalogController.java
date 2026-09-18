@@ -7,6 +7,8 @@ import com.garmentstore.catalog.domain.AttributeValue;
 import com.garmentstore.catalog.dto.CategoryResponse;
 import com.garmentstore.catalog.dto.ProductDetailResponse;
 import com.garmentstore.catalog.dto.ProductImageResponse;
+import com.garmentstore.catalog.dto.SaleConfigResponse;
+import com.garmentstore.catalog.dto.StoreMediaResponse;
 import com.garmentstore.catalog.dto.admin.*;
 import com.garmentstore.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -174,10 +176,30 @@ public class AdminCatalogController {
     // Featured / Related
     // -------------------------------------------------------------------------
 
+    /**
+     * List all featured products (active + inactive) ordered by display_order.
+     * Gives the admin a full picture of what's currently in the featured list.
+     */
+    @GetMapping("/api/v1/admin/catalog/featured")
+    public ApiResponse<List<AdminFeaturedListResponse>> listFeatured() {
+        return ApiResponse.success("Featured products fetched", s.listFeatured());
+    }
+
     @PostMapping("/api/v1/admin/catalog/featured")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Long> addFeatured(@Valid @RequestBody AdminFeaturedRequest r) {
         return ApiResponse.success("Featured product added", s.addFeatured(r));
+    }
+
+    /**
+     * Update display order or active flag of an existing featured entry.
+     * Only the fields present in the request body are applied.
+     */
+    @PutMapping("/api/v1/admin/catalog/featured/{id}")
+    public ApiResponse<AdminFeaturedListResponse> updateFeatured(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminFeaturedRequest r) {
+        return ApiResponse.success("Featured product updated", s.updateFeatured(id, r));
     }
 
     @DeleteMapping("/api/v1/admin/catalog/featured/{id}")
@@ -279,13 +301,13 @@ public class AdminCatalogController {
     }
 
     @GetMapping("/api/v1/admin/catalog/attributes/{id}/values")
-    public ApiResponse<List<AttributeValue>> listAttributeValues(@PathVariable Long id) {
+    public ApiResponse<List<AdminAttributeValueResponse>> listAttributeValues(@PathVariable Long id) {
         return ApiResponse.success("Attribute values fetched", s.listAttributeValues(id));
     }
 
     @PostMapping("/api/v1/admin/catalog/attribute-values")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<AttributeValue> createAttributeValue(@Valid @RequestBody AdminAttributeValueRequest r) {
+    public ApiResponse<AdminAttributeValueResponse> createAttributeValue(@Valid @RequestBody AdminAttributeValueRequest r) {
         return ApiResponse.success("Attribute value created", s.createAttributeValue(r));
     }
 
@@ -315,5 +337,42 @@ public class AdminCatalogController {
     public ApiResponse<Void> deleteAttributeValue(@PathVariable Long id) {
         s.deleteAttributeValue(id);
         return ApiResponse.success("Attribute value deleted", null);
+    }
+
+    // -------------------------------------------------------------------------
+    // Store Media — admin management
+    // -------------------------------------------------------------------------
+
+    @GetMapping("/api/v1/admin/store-media")
+    public ApiResponse<List<StoreMediaResponse>> listStoreMedia() {
+        return ApiResponse.success("Store media fetched", s.listStoreMedia());
+    }
+
+    /**
+     * PUT /api/v1/admin/store-media/{key}
+     * Creates or updates a placement slot. Idempotent.
+     */
+    @PutMapping("/api/v1/admin/store-media/{key}")
+    public ApiResponse<StoreMediaResponse> upsertStoreMedia(
+            @PathVariable String key,
+            @Valid @RequestBody AdminStoreMediaRequest r) {
+        log.info("Admin upsert store media: key={}", key);
+        return ApiResponse.success("Store media updated", s.upsertStoreMedia(key, r));
+    }
+
+    // -------------------------------------------------------------------------
+    // Sale Config — admin toggle & update
+    // -------------------------------------------------------------------------
+
+    @GetMapping("/api/v1/admin/sale-config")
+    public ApiResponse<SaleConfigResponse> getSaleConfig() {
+        return ApiResponse.success("Sale config fetched", s.getAdminSaleConfig());
+    }
+
+    @PutMapping("/api/v1/admin/sale-config")
+    public ApiResponse<SaleConfigResponse> updateSaleConfig(
+            @Valid @RequestBody AdminSaleConfigRequest r) {
+        log.info("Admin update sale config: active={}", r.active());
+        return ApiResponse.success("Sale config updated", s.updateSaleConfig(r));
     }
 }

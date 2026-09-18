@@ -17,4 +17,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Returns the first admin user — used by the notification module to route admin alerts. */
     @Query("select u from User u join u.roles r where r.code = 'ADMIN' or r.code = 'ROLE_ADMIN' order by u.id asc")
     Optional<User> findFirstAdmin();
+
+    long countByUserType(com.garmentstore.auth.domain.UserType userType);
+
+    long countByUserTypeAndCreatedAtBefore(com.garmentstore.auth.domain.UserType userType, java.time.Instant before);
 }
+

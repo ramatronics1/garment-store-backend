@@ -5,6 +5,7 @@ import com.garmentstore.catalog.dto.*;
 import com.garmentstore.catalog.infrastructure.*;
 import com.garmentstore.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,15 +16,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CatalogService {
+
+    /**
+     * Window (in days) within which a product is considered a "new arrival".
+     * Configurable via {@code catalog.new-arrivals.days} in application.properties.
+     * Defaults to 30 days.
+     */
+    @Value("${catalog.new-arrivals.days:30}")
+    private int newArrivalsDays;
 
     private final CategoryRepository categories;
     private final ProductRepository products;
@@ -31,6 +39,8 @@ public class CatalogService {
     private final ProductVariantRepository variants;
     private final FeaturedProductRepository featured;
     private final RelatedProductMappingRepository related;
+    private final StoreMediaRepository storeMedia;
+    private final SaleConfigRepository saleConfig;
 
     // =========================================================================
     // Categories
@@ -56,6 +66,7 @@ public class CatalogService {
     public PageResponse<ProductSummaryResponse> getProducts(
             Long categoryId, String categoryParam, String gender,
             BigDecimal minPrice, BigDecimal maxPrice, Integer minDiscount,
+            String brand, String fit, String season, String fabric,
             String q, int page, int size, String sort) {
 
         GenderTag genderTag = null;
@@ -75,12 +86,36 @@ public class CatalogService {
 
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100), sort(sort));
 
+        // Resolve minDiscount → matching product IDs via variant query (was silently ignored before)
+        List<Long> discountFilteredIds = null;
+        if (minDiscount != null && minDiscount > 0) {
+            discountFilteredIds = variants.findProductIdsWithDiscountAtLeast(BigDecimal.valueOf(minDiscount));
+            if (discountFilteredIds.isEmpty()) {
+                // No products match the discount filter — return empty page immediately
+                return new PageResponse<>(List.of(), 0, size, 0L, 0, true);
+            }
+        }
+
+        // Resolve categoryId to include subcategories (two-step: find child IDs, then IN clause)
+        final List<Long> categoryIdFilter;
+        if (cid != null) {
+            List<Long> childIds = categories
+                    .findByParentCategoryIdAndActiveTrueOrderByDisplayOrderAscNameAsc(cid)
+                    .stream().map(Category::getId).collect(Collectors.toList());
+            childIds.add(cid); // include the parent itself
+            categoryIdFilter = childIds;
+        } else {
+            categoryIdFilter = null;
+        }
+
+        final List<Long> finalDiscountIds = discountFilteredIds;
+
         Page<Product> paged = products.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
 
-            if (cid != null) {
-                predicates.add(cb.equal(root.get("category").get("id"), cid));
+            if (categoryIdFilter != null) {
+                predicates.add(root.get("category").get("id").in(categoryIdFilter));
             } else if (ctext != null) {
                 predicates.add(cb.or(
                         cb.equal(cb.lower(root.get("category").get("name")), ctext),
@@ -89,12 +124,27 @@ public class CatalogService {
             if (fGender != null) {
                 predicates.add(cb.equal(root.get("genderTag"), fGender));
             }
+            if (brand != null && !brand.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("brand")), brand.trim().toLowerCase()));
+            }
+            if (fit != null && !fit.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("fit")), fit.trim().toLowerCase()));
+            }
+            if (season != null && !season.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("season")), season.trim().toLowerCase()));
+            }
+            if (fabric != null && !fabric.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("fabricDetails")), "%" + fabric.trim().toLowerCase() + "%"));
+            }
             if (q != null && !q.isBlank()) {
                 String pattern = "%" + q.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("name")), pattern),
                         cb.like(cb.lower(root.get("slug")), pattern),
                         cb.like(cb.lower(root.get("description")), pattern)));
+            }
+            if (finalDiscountIds != null) {
+                predicates.add(root.get("id").in(finalDiscountIds));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
@@ -114,8 +164,16 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<ProductSummaryResponse> getProducts(
+            Long categoryId, String categoryParam, String gender,
+            BigDecimal minPrice, BigDecimal maxPrice, Integer minDiscount,
+            String q, int page, int size, String sort) {
+        return getProducts(categoryId, categoryParam, gender, minPrice, maxPrice, minDiscount, null, null, null, null, q, page, size, sort);
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<ProductSummaryResponse> getProducts(Long cid, String q, int page, int size, String sort) {
-        return getProducts(cid, null, null, null, null, null, q, page, size, sort);
+        return getProducts(cid, null, null, null, null, null, null, null, null, null, q, page, size, sort);
     }
 
     @Transactional(readOnly = true)
@@ -162,6 +220,138 @@ public class CatalogService {
     }
 
     // =========================================================================
+    // Category Tree
+    // =========================================================================
+
+    /**
+     * Returns all active categories as a nested tree.
+     * Root nodes have no parent; each carries a {@code children} list.
+     * Single DB call: fetch all active categories, build tree in memory.
+     */
+    @Transactional(readOnly = true)
+    public List<CategoryTreeResponse> getCategoryTree() {
+        List<Category> all = categories.findByActiveTrueOrderByDisplayOrderAscNameAsc();
+
+        // Group children by parentId for O(n) lookup
+        Map<Long, List<Category>> byParent = all.stream()
+                .filter(c -> c.getParentCategory() != null)
+                .collect(Collectors.groupingBy(c -> c.getParentCategory().getId()));
+
+        // Build tree nodes only for root categories
+        return all.stream()
+                .filter(c -> c.getParentCategory() == null)
+                .map(c -> toTreeNode(c, byParent))
+                .toList();
+    }
+
+    private CategoryTreeResponse toTreeNode(Category c, Map<Long, List<Category>> byParent) {
+        List<CategoryTreeResponse> children = byParent
+                .getOrDefault(c.getId(), List.of())
+                .stream()
+                .map(child -> toTreeNode(child, byParent))
+                .toList();
+        return new CategoryTreeResponse(
+                c.getId(), c.getName(), c.getSlug(),
+                c.getParentCategory() == null ? null : c.getParentCategory().getId(),
+                c.getDisplayOrder(), c.isActive(),
+                c.getThumbnailUrl(), c.getBannerUrl(), c.getBannerAlt(),
+                c.getDescription(), c.getIconUrl(),
+                children);
+    }
+
+    // =========================================================================
+    // Store Media
+    // =========================================================================
+
+    /**
+     * Returns all active hero banner slides ordered by display_order.
+     * Placement keys follow the pattern {@code hero_banner_*}.
+     */
+    @Transactional(readOnly = true)
+    public List<StoreMediaResponse> getHeroSlides() {
+        return storeMedia
+                .findByPlacementKeyStartingWithAndActiveTrueOrderByDisplayOrderAsc("hero_banner_")
+                .stream().map(this::mediaResponse).toList();
+    }
+
+    /**
+     * Returns a single active store media slot by placement key.
+     * Returns null (not an error) if the slot is inactive or missing.
+     */
+    @Transactional(readOnly = true)
+    public StoreMediaResponse getStoreMedia(String key) {
+        return storeMedia.findByPlacementKey(key)
+                .filter(StoreMedia::isActive)
+                .map(this::mediaResponse)
+                .orElse(null);
+    }
+
+    // =========================================================================
+    // Sale Config
+    // =========================================================================
+
+    /**
+     * Returns the current sale configuration.
+     * When {@code active} is false the frontend should hide the sale banner.
+     */
+    @Transactional(readOnly = true)
+    public SaleConfigResponse getSaleConfig() {
+        return saleConfig.findFirstByOrderByIdAsc()
+                .map(this::saleResponse)
+                .orElse(null);
+    }
+
+    // =========================================================================
+    // Sale Products
+    // =========================================================================
+
+    /**
+     * Returns paginated ACTIVE products that have at least one active variant with
+     * any real discount (selling_price < mrp, i.e. discount >= 1%).
+     * Sale is derived from pricing — no separate flag needed.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<ProductSummaryResponse> getSaleProducts(int page, int size) {
+        List<Long> saleProductIds = variants.findProductIdsWithDiscountAtLeast(BigDecimal.ONE);
+        if (saleProductIds.isEmpty()) {
+            return new PageResponse<>(List.of(), page, size, 0L, 0, true);
+        }
+
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100),
+                Sort.by("createdAt").descending());
+
+        Page<Product> paged = products.findAll((root, query, cb) -> cb.and(
+                cb.equal(root.get("status"), ProductStatus.ACTIVE),
+                root.get("id").in(saleProductIds)
+        ), pageable);
+
+        List<ProductSummaryResponse> content = paged.getContent().stream().map(this::summary).toList();
+        return new PageResponse<>(content, paged.getNumber(), paged.getSize(),
+                paged.getTotalElements(), paged.getTotalPages(), paged.isLast());
+    }
+
+    // =========================================================================
+    // New Arrivals
+    // =========================================================================
+
+    /**
+     * Returns paginated ACTIVE products created within the last {@code newArrivalsDays} days,
+     * newest first. The window is configurable via {@code catalog.new-arrivals.days}.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<ProductSummaryResponse> getNewArrivals(int page, int size) {
+        Instant since = Instant.now().minus(newArrivalsDays, ChronoUnit.DAYS);
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.min(Math.max(1, size), 100));
+
+        Page<Product> paged = products
+                .findByStatusAndCreatedAtAfterOrderByCreatedAtDesc(ProductStatus.ACTIVE, since, pageable);
+
+        List<ProductSummaryResponse> content = paged.getContent().stream().map(this::summary).toList();
+        return new PageResponse<>(content, paged.getNumber(), paged.getSize(),
+                paged.getTotalElements(), paged.getTotalPages(), paged.isLast());
+    }
+
+    // =========================================================================
     // Size guide / Availability
     // =========================================================================
 
@@ -192,9 +382,19 @@ public class CatalogService {
     // =========================================================================
 
     public CategoryResponse cat(Category c) {
-        return new CategoryResponse(c.getId(), c.getName(), c.getSlug(),
+        return new CategoryResponse(
+                c.getId(), c.getName(), c.getSlug(),
                 c.getParentCategory() == null ? null : c.getParentCategory().getId(),
-                c.getDisplayOrder(), c.isActive());
+                c.getDisplayOrder(), c.isActive(),
+                c.getThumbnailUrl(), c.getBannerUrl(), c.getBannerAlt(),
+                c.getDescription(), c.getIconUrl());
+    }
+
+    /** Exposed for AdminCatalogService to reuse when building the featured-product admin list. */
+    public String resolveThumbnailUrl(Long productId) {
+        return images.findFirstByProductIdAndThumbnailTrueOrderByDisplayOrderAscIdAsc(productId)
+                .or(() -> images.findByProductIdOrderByDisplayOrderAscIdAsc(productId).stream().findFirst())
+                .map(ProductImage::getMediaUrl).orElse(null);
     }
 
     public ProductSummaryResponse summary(Product p) {
@@ -277,5 +477,19 @@ public class CatalogService {
             case "name_asc"   -> Sort.by("name").ascending();
             default           -> Sort.by("createdAt").descending();
         };
+    }
+
+
+    private StoreMediaResponse mediaResponse(StoreMedia m) {
+        return new StoreMediaResponse(
+                m.getId(), m.getPlacementKey(), m.getMediaUrl(), m.getAltText(),
+                m.getLinkUrl(), m.getTitle(), m.getSubtitle(), m.getBadgeText(),
+                m.isActive(), m.getDisplayOrder());
+    }
+
+    private SaleConfigResponse saleResponse(SaleConfig sc) {
+        return new SaleConfigResponse(
+                sc.getId(), sc.isActive(), sc.getTitle(), sc.getSubtitle(),
+                sc.getEndsAt(), sc.getBadgeText(), sc.getLinkUrl(), sc.getMediaUrl());
     }
 }
