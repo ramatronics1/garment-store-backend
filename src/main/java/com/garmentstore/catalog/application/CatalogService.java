@@ -104,6 +104,21 @@ public class CatalogService {
                     .stream().map(Category::getId).collect(Collectors.toList());
             childIds.add(cid); // include the parent itself
             categoryIdFilter = childIds;
+        } else if (ctext != null) {
+            Optional<Category> matched = categories.findBySlugIgnoreCaseAndActiveTrue(ctext);
+            if (matched.isEmpty()) {
+                matched = categories.findByNameIgnoreCaseAndActiveTrue(ctext);
+            }
+            if (matched.isPresent()) {
+                Long matchedId = matched.get().getId();
+                List<Long> childIds = categories
+                        .findByParentCategoryIdAndActiveTrueOrderByDisplayOrderAscNameAsc(matchedId)
+                        .stream().map(Category::getId).collect(Collectors.toList());
+                childIds.add(matchedId);
+                categoryIdFilter = childIds;
+            } else {
+                categoryIdFilter = null;
+            }
         } else {
             categoryIdFilter = null;
         }
@@ -194,7 +209,15 @@ public class CatalogService {
 
     @Transactional(readOnly = true)
     public ProductDetailResponse getProductBySlug(String slug) {
-        return detail(products.findBySlugAndStatus(slug, ProductStatus.ACTIVE)
+        return detail(products.findBySlugIgnoreCaseAndStatus(slug, ProductStatus.ACTIVE)
+                .or(() -> {
+                    try {
+                        Long id = Long.parseLong(slug.trim());
+                        return products.findByIdAndStatus(id, ProductStatus.ACTIVE);
+                    } catch (NumberFormatException e) {
+                        return java.util.Optional.empty();
+                    }
+                })
                 .orElseThrow(() -> new BusinessException("PRODUCT_NOT_FOUND", "Product not found", HttpStatus.NOT_FOUND)));
     }
 

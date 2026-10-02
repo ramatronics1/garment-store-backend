@@ -46,7 +46,7 @@ public class NotificationTemplateEngine {
         String subject = "Order Confirmed! #" + ctx.orderNumber();
         String body = isWhatsApp(ch)
             ? """
-              🛍️ *Vastra* — Order Placed!
+              🛍️ *Selection* — Order Placed!
 
               Hi %s! 🎉
 
@@ -55,19 +55,19 @@ public class NotificationTemplateEngine {
 
               We'll notify you once it's confirmed and packed.
 
-              Track your order: https://vastra.in/account/orders
+              Track your order: https://selection.in/account/orders
               """.formatted(ctx.customerName(), ctx.orderNumber(), ctx.amount())
             : """
               <h2>🎉 Your order is confirmed!</h2>
               <p>Hi <strong>%s</strong>,</p>
-              <p>Thank you for shopping with Vastra! Your order <strong>#%s</strong> has been placed.</p>
+              <p>Thank you for shopping with Selection! Your order <strong>#%s</strong> has been placed.</p>
               <table style="border-collapse:collapse;width:100%%">
                 <tr><td style="padding:8px;color:#888;">Order ID</td><td style="padding:8px;font-weight:600;">#%s</td></tr>
                 <tr><td style="padding:8px;color:#888;">Amount</td><td style="padding:8px;font-weight:600;">₹%s</td></tr>
                 <tr><td style="padding:8px;color:#888;">Status</td><td style="padding:8px;color:#27ae60;font-weight:600;">✅ Placed</td></tr>
               </table>
               <p>We'll send you another update when your order is confirmed and packed.</p>
-              <a class="cta" href="https://vastra.in/account/orders">Track Your Order →</a>
+              <a class="cta" href="https://selection.in/account/orders">Track Your Order →</a>
               """.formatted(ctx.customerName(), ctx.orderNumber(), ctx.orderNumber(), ctx.amount());
         return new NotificationContent(subject, body);
     }
@@ -75,10 +75,10 @@ public class NotificationTemplateEngine {
     // ── Customer: Order Confirmed ──────────────────────────────────────────────
 
     private NotificationContent orderConfirmed(NotificationChannelType ch, TemplateContext ctx) {
-        String subject = "Your Vastra Order is Being Prepared! #" + ctx.orderNumber();
+        String subject = "Your Selection Order is Being Prepared! #" + ctx.orderNumber();
         String body = isWhatsApp(ch)
             ? """
-              ✅ *Vastra* — Order Confirmed!
+              ✅ *Selection* — Order Confirmed!
 
               Hi %s!
 
@@ -91,7 +91,7 @@ public class NotificationTemplateEngine {
               <p>Hi <strong>%s</strong>,</p>
               <p>Your order <strong>#%s</strong> has been confirmed by our team and is now being carefully packed.</p>
               <p>We'll send you tracking details the moment it ships!</p>
-              <a class="cta" href="https://vastra.in/account/orders">View Order →</a>
+              <a class="cta" href="https://selection.in/account/orders">View Order →</a>
               """.formatted(ctx.customerName(), ctx.orderNumber());
         return new NotificationContent(subject, body);
     }
@@ -99,10 +99,10 @@ public class NotificationTemplateEngine {
     // ── Customer: Order Shipped ────────────────────────────────────────────────
 
     private NotificationContent orderShipped(NotificationChannelType ch, TemplateContext ctx) {
-        String subject = "Your Vastra Order is On Its Way! 🚚 #" + ctx.orderNumber();
+        String subject = "Your Selection Order is On Its Way! 🚚 #" + ctx.orderNumber();
         String body = isWhatsApp(ch)
             ? """
-              🚚 *Vastra* — Your order has shipped!
+              🚚 *Selection* — Your order has shipped!
 
               Hi %s!
 
@@ -110,15 +110,15 @@ public class NotificationTemplateEngine {
 
               It will be delivered to your address within 2-5 business days.
 
-              Track your order: https://vastra.in/account/orders
+              Track your order: https://selection.in/account/orders
               """.formatted(ctx.customerName(), ctx.orderNumber())
             : """
               <h2>🚚 Your Order is On Its Way!</h2>
               <p>Hi <strong>%s</strong>,</p>
               <p>Exciting news! Your order <strong>#%s</strong> has been shipped and is heading your way.</p>
               <p><strong>Expected delivery:</strong> 2-5 business days</p>
-              <p>Sit tight — your Vastra fashion is coming! 🎁</p>
-              <a class="cta" href="https://vastra.in/account/orders">Track Order →</a>
+              <p>Sit tight — your Selection fashion is coming! 🎁</p>
+              <a class="cta" href="https://selection.in/account/orders">Track Order →</a>
               """.formatted(ctx.customerName(), ctx.orderNumber());
         return new NotificationContent(subject, body);
     }
@@ -126,10 +126,10 @@ public class NotificationTemplateEngine {
     // ── Customer: Order Delivered ──────────────────────────────────────────────
 
     private NotificationContent orderDelivered(NotificationChannelType ch, TemplateContext ctx) {
-        String subject = "Your Vastra Order Has Arrived! 📦 #" + ctx.orderNumber();
+        String subject = "Your Selection Order Has Arrived! 📦 #" + ctx.orderNumber();
         String body = isWhatsApp(ch)
             ? """
-              📦 *Vastra* — Order Delivered!
+              📦 *Selection* — Order Delivered!
 
               Hi %s! 🎉
 
@@ -137,14 +137,14 @@ public class NotificationTemplateEngine {
 
               We hope you love your new look! Style it, flaunt it! ✨
 
-              Share your experience: https://vastra.in/reviews
+              Share your experience: https://selection.in/reviews
               """.formatted(ctx.customerName(), ctx.orderNumber())
             : """
               <h2>📦 Your Order Has Arrived!</h2>
               <p>Hi <strong>%s</strong>,</p>
               <p>Your order <strong>#%s</strong> has been delivered! We hope you love your new pieces.</p>
               <p>Style them, flaunt them — and don't forget to share your looks! ✨</p>
-              <a class="cta" href="https://vastra.in/account/orders">Rate Your Order →</a>
+              <a class="cta" href="https://selection.in/account/orders">Rate Your Order →</a>
               """.formatted(ctx.customerName(), ctx.orderNumber());
         return new NotificationContent(subject, body);
     }
@@ -155,7 +155,7 @@ public class NotificationTemplateEngine {
         String subject = "Order Cancelled — #" + ctx.orderNumber();
         String body = isWhatsApp(ch)
             ? """
-              ❌ *Vastra* — Order Cancelled
+              ❌ *Selection* — Order Cancelled
 
               Hi %s,
 
@@ -163,14 +163,14 @@ public class NotificationTemplateEngine {
 
               If you have any questions, please contact our support.
 
-              Shop again: https://vastra.in
+              Shop again: https://selection.in
               """.formatted(ctx.customerName(), ctx.orderNumber())
             : """
               <h2>❌ Order Cancelled</h2>
               <p>Hi <strong>%s</strong>,</p>
               <p>Your order <strong>#%s</strong> has been cancelled.</p>
               <p>If you believe this is an error or need help, please contact our support team.</p>
-              <a class="cta" href="https://vastra.in/products">Continue Shopping →</a>
+              <a class="cta" href="https://selection.in/products">Continue Shopping →</a>
               """.formatted(ctx.customerName(), ctx.orderNumber());
         return new NotificationContent(subject, body);
     }
@@ -181,24 +181,24 @@ public class NotificationTemplateEngine {
         String subject = "🛒 New Order Received — #" + ctx.orderNumber();
         String body = isWhatsApp(ch)
             ? """
-              🛒 *Vastra Admin* — New Order!
+              🛒 *Selection Admin* — New Order!
 
               Order *#%s* received from *%s*.
               Amount: ₹%s
 
               Action required: Please confirm the order.
-              Dashboard: https://vastra.in/admin/orders
+              Dashboard: https://selection.in/admin/orders
               """.formatted(ctx.orderNumber(), ctx.customerName(), ctx.amount())
             : """
               <h2>🛒 New Order Received!</h2>
-              <p>A new order has been placed on Vastra.</p>
+              <p>A new order has been placed on Selection.</p>
               <table style="border-collapse:collapse;width:100%%">
                 <tr><td style="padding:8px;color:#888;">Order</td><td style="padding:8px;font-weight:600;">#%s</td></tr>
                 <tr><td style="padding:8px;color:#888;">Customer</td><td style="padding:8px;">%s</td></tr>
                 <tr><td style="padding:8px;color:#888;">Amount</td><td style="padding:8px;font-weight:600;">₹%s</td></tr>
-                <tr><td style="padding:8px;color:#888;">Status</td><td style="padding:8px;color:#f39c12;font-weight:600;">⏳ Pending</td></tr>
+                <tr><td style="padding:8px;color:#f39c12;font-weight:600;">⏳ Pending</td></tr>
               </table>
-              <a class="cta" href="https://vastra.in/admin/orders">Manage Order →</a>
+              <a class="cta" href="https://selection.in/admin/orders">Manage Order →</a>
               """.formatted(ctx.orderNumber(), ctx.customerName(), ctx.amount());
         return new NotificationContent(subject, body);
     }
@@ -209,14 +209,14 @@ public class NotificationTemplateEngine {
         String subject = "⚠️ Low Stock Alert — " + ctx.productName();
         String body = isWhatsApp(ch)
             ? """
-              ⚠️ *Vastra Admin* — Low Stock Alert!
+              ⚠️ *Selection Admin* — Low Stock Alert!
 
               Product: *%s*
               SKU: %s
               Remaining: *%s units*
 
               Please restock immediately to avoid missed sales.
-              Dashboard: https://vastra.in/admin/inventory
+              Dashboard: https://selection.in/admin/inventory
               """.formatted(ctx.productName(), ctx.sku(), ctx.stockRemaining())
             : """
               <h2>⚠️ Low Stock Alert</h2>
@@ -226,7 +226,7 @@ public class NotificationTemplateEngine {
                 <tr><td style="padding:8px;color:#888;">SKU</td><td style="padding:8px;">%s</td></tr>
                 <tr><td style="padding:8px;color:#888;">Stock Left</td><td style="padding:8px;color:#e74c3c;font-weight:600;">%s units</td></tr>
               </table>
-              <a class="cta" href="https://vastra.in/admin/inventory">Update Inventory →</a>
+              <a class="cta" href="https://selection.in/admin/inventory">Update Inventory →</a>
               """.formatted(ctx.productName(), ctx.sku(), ctx.stockRemaining());
         return new NotificationContent(subject, body);
     }
@@ -234,20 +234,20 @@ public class NotificationTemplateEngine {
     // ── Customer: Welcome ──────────────────────────────────────────────────────
 
     private NotificationContent welcome(NotificationChannelType ch, TemplateContext ctx) {
-        String subject = "Welcome to Vastra — India's Fashion Destination 🎉";
+        String subject = "Welcome to Selection — India's Fashion Destination 🎉";
         String body = isWhatsApp(ch)
             ? """
-              👗 *Welcome to Vastra!*
+              👗 *Welcome to Selection!*
 
               Hi %s! 🎉
 
               Your account has been created successfully.
 
               Explore thousands of styles for Men, Women & Kids.
-              Shop now: https://vastra.in
+              Shop now: https://selection.in
               """.formatted(ctx.customerName())
             : """
-              <h2>Welcome to Vastra, %s! 🎉</h2>
+              <h2>Welcome to Selection, %s! 🎉</h2>
               <p>We're thrilled to have you join India's growing fashion destination.</p>
               <p>Explore thousands of curated styles for Men, Women & Kids — from everyday casuals to festive specials.</p>
               <ul>
@@ -255,7 +255,7 @@ public class NotificationTemplateEngine {
                 <li>✅ Easy 30-day returns</li>
                 <li>✅ Exclusive member deals</li>
               </ul>
-              <a class="cta" href="https://vastra.in/products">Start Shopping →</a>
+              <a class="cta" href="https://selection.in/products">Start Shopping →</a>
               """.formatted(ctx.customerName());
         return new NotificationContent(subject, body);
     }

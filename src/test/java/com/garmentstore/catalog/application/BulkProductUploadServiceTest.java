@@ -69,7 +69,7 @@ class BulkProductUploadServiceTest {
     void testProcessValidBulkUpload() {
         String csvData = """
 product_code,product_name,category_name,gender_tag,brand,description,fabric_details,fit,season,care_instructions,country_of_origin,variant_sku,barcode,color_name,size_code,mrp,selling_price,cost_price,stock_quantity,weight_grams,image_urls
-TSHRT001,Cotton Crew T-Shirt,Shirts,MEN,Vastra,Desc,100% Cotton,Regular,Summer,Wash,India,TSHRT001-BLK-M,123456,Black,M,999.00,799.00,400.00,100,200,https://cdn.example.com/1.jpg
+TSHRT001,Cotton Crew T-Shirt,Shirts,MEN,Selection,Desc,100% Cotton,Regular,Summer,Wash,India,TSHRT001-BLK-M,123456,Black,M,999.00,799.00,400.00,100,200,https://cdn.example.com/1.jpg
 """.trim();
 
         MockMultipartFile file = new MockMultipartFile("file", "products.csv", "text/csv", csvData.getBytes(StandardCharsets.UTF_8));
@@ -91,7 +91,7 @@ TSHRT001,Cotton Crew T-Shirt,Shirts,MEN,Vastra,Desc,100% Cotton,Regular,Summer,W
     void testProcessInvalidCategoryAndSize() {
         String csvData = """
 product_code,product_name,category_name,gender_tag,brand,description,fabric_details,fit,season,care_instructions,country_of_origin,variant_sku,barcode,color_name,size_code,mrp,selling_price,cost_price,stock_quantity,weight_grams,image_urls
-TSHRT002,Cotton Crew T-Shirt,NonExistentCategory,MEN,Vastra,Desc,100% Cotton,Regular,Summer,Wash,India,TSHRT002-BLK-XXL,123456,Black,XXL,999.00,1200.00,400.00,100,200,https://cdn.example.com/1.jpg
+TSHRT002,Cotton Crew T-Shirt,NonExistentCategory,MEN,Selection,Desc,100% Cotton,Regular,Summer,Wash,India,TSHRT002-BLK-XXL,123456,Black,XXL,999.00,1200.00,400.00,100,200,https://cdn.example.com/1.jpg
 """.trim();
 
         MockMultipartFile file = new MockMultipartFile("file", "invalid_products.csv", "text/csv", csvData.getBytes(StandardCharsets.UTF_8));
@@ -109,7 +109,7 @@ TSHRT002,Cotton Crew T-Shirt,NonExistentCategory,MEN,Vastra,Desc,100% Cotton,Reg
     void testProcessBulkUploadWithDerivedSkuAndSellingPrice() {
         String csvData = """
 product_code,product_name,category_name,gender_tag,brand,description,fabric_details,fit,season,care_instructions,country_of_origin,variant_sku,barcode,color_name,size_code,mrp,selling_price,cost_price,stock_quantity,weight_grams,image_urls
-TSHRT003,Cotton Crew T-Shirt,Shirts,MEN,Vastra,Desc,100% Cotton,Regular,Summer,Wash,India,,123456,Black,M,999.00,,400.00,100,200,https://cdn.example.com/1.jpg
+TSHRT003,Cotton Crew T-Shirt,Shirts,MEN,Selection,Desc,100% Cotton,Regular,Summer,Wash,India,,123456,Black,M,999.00,,400.00,100,200,https://cdn.example.com/1.jpg
 """.trim();
 
         MockMultipartFile file = new MockMultipartFile("file", "derived_products.csv", "text/csv", csvData.getBytes(StandardCharsets.UTF_8));

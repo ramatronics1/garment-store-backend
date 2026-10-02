@@ -185,6 +185,6 @@ public class OrderService {
 
     private String generateOrderNumber() {
         int randomNum = secureRandom.nextInt(90000) + 10000;
-        return "VAS-" + Year.now().getValue() + "-" + randomNum;
+        return "SEL-" + Year.now().getValue() + "-" + randomNum;
     }
 }

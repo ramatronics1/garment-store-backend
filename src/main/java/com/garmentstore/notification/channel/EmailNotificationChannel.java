@@ -49,10 +49,10 @@ public class EmailNotificationChannel implements NotificationChannel {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setTo(request.getRecipient());
-            helper.setSubject(request.getSubject() != null ? request.getSubject() : "Vastra Notification");
+            helper.setSubject(request.getSubject() != null ? request.getSubject() : "Selection Notification");
             // Send as HTML for rich formatting
             helper.setText(buildHtmlBody(request.getBody()), true);
-            helper.setFrom("Vastra Fashion <noreply@vastra.in>");
+            helper.setFrom("Selection Fashion <noreply@selection.in>");
 
             mailSender.send(message);
             log.info("[Email] Sent {} to {}", request.getType(), request.getRecipient());
@@ -65,7 +65,7 @@ public class EmailNotificationChannel implements NotificationChannel {
 
     /**
      * Wraps plain text body in a branded HTML email template.
-     * This makes Vastra emails look professional — like Myntra/Ajio.
+     * This makes Selection emails look professional — like Myntra/Ajio.
      */
     private String buildHtmlBody(String plainBody) {
         return """
@@ -93,13 +93,13 @@ public class EmailNotificationChannel implements NotificationChannel {
             <body>
               <div class="wrapper">
                 <div class="header">
-                  <div class="logo">VAS<span>T</span>RA</div>
+                  <div class="logo">SELEC<span>T</span>ION</div>
                 </div>
                 <div class="body">
                   %s
                 </div>
                 <div class="footer">
-                  &copy; 2026 Vastra Fashion Pvt. Ltd. &bull; Unsubscribe from notifications in your account settings.
+                  &copy; 2026 Selection Fashion Pvt. Ltd. &bull; Unsubscribe from notifications in your account settings.
                 </div>
               </div>
             </body>

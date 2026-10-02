@@ -328,7 +328,7 @@ public class AdminCatalogController {
     public org.springframework.http.ResponseEntity<byte[]> downloadBulkTemplate() {
         byte[] csvData = bulkUploadService.generateSampleTemplateCsv();
         return org.springframework.http.ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"vastra_products_bulk_template.csv\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"selection_products_bulk_template.csv\"")
                 .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
                 .body(csvData);
     }

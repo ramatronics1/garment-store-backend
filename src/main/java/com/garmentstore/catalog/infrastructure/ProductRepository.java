@@ -16,6 +16,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     Optional<Product> findByIdAndStatus(Long id, ProductStatus s);
     Optional<Product> findBySlugAndStatus(String slug, ProductStatus s);
+    Optional<Product> findBySlugIgnoreCaseAndStatus(String slug, ProductStatus s);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
     boolean existsByProductCode(String productCode);
@@ -23,6 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     long countByStatusNot(ProductStatus status);
     long countByStatusAndCreatedAtBefore(ProductStatus status, Instant before);
     java.util.List<Product> findTop5ByStatusOrderByCreatedAtDesc(ProductStatus status);
+    java.util.List<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status);
 
     @Query("select p from Product p where p.status=:status and (:categoryId is null or p.category.id=:categoryId) and (:keyword is null or lower(p.name) like lower(concat('%',:keyword,'%'))) ")
     Page<Product> searchPublic(@Param("status") ProductStatus status, @Param("categoryId") Long categoryId, @Param("keyword") String keyword, Pageable pageable);

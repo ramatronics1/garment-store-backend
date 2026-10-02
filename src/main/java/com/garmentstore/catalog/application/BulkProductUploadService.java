@@ -49,9 +49,9 @@ public class BulkProductUploadService {
     public byte[] generateSampleTemplateCsv() {
         String csvContent = """
 product_code,product_name,category_name,gender_tag,brand,description,fabric_details,fit,season,care_instructions,country_of_origin,variant_sku,barcode,color_name,size_code,mrp,selling_price,cost_price,stock_quantity,weight_grams,image_urls
-SHRT001,Classic Slim Fit Cotton Shirt,Shirts,MEN,Vastra,100% Breathable Cotton Shirt for casual wear,100% Organic Cotton,Slim Fit,Summer 2026,Machine wash cold,India,SHRT001-BLK-M,8901234567891,Black,M,1999.00,1499.00,800.00,50,350,https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf
-SHRT001,Classic Slim Fit Cotton Shirt,Shirts,MEN,Vastra,100% Breathable Cotton Shirt for casual wear,100% Organic Cotton,Slim Fit,Summer 2026,Machine wash cold,India,,8901234567892,Black,L,1999.00,,800.00,30,360,https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf
-SHRT001,Classic Slim Fit Cotton Shirt,Shirts,MEN,Vastra,100% Breathable Cotton Shirt for casual wear,100% Organic Cotton,Slim Fit,Summer 2026,Machine wash cold,India,SHRT001-BLU-M,8901234567893,Blue,M,1999.00,1499.00,800.00,25,350,https://images.unsplash.com/photo-1596755094514-f87e34085b2c
+SHRT001,Classic Slim Fit Cotton Shirt,Shirts,MEN,Selection,100% Breathable Cotton Shirt for casual wear,100% Organic Cotton,Slim Fit,Summer 2026,Machine wash cold,India,SHRT001-BLK-M,8901234567891,Black,M,1999.00,1499.00,800.00,50,350,https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf
+SHRT001,Classic Slim Fit Cotton Shirt,Shirts,MEN,Selection,100% Breathable Cotton Shirt for casual wear,100% Organic Cotton,Slim Fit,Summer 2026,Machine wash cold,India,,8901234567892,Black,L,1999.00,,800.00,30,360,https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf
+SHRT001,Classic Slim Fit Cotton Shirt,Shirts,MEN,Selection,100% Breathable Cotton Shirt for casual wear,100% Organic Cotton,Slim Fit,Summer 2026,Machine wash cold,India,SHRT001-BLU-M,8901234567893,Blue,M,1999.00,1499.00,800.00,25,350,https://images.unsplash.com/photo-1596755094514-f87e34085b2c
 """.trim();
         return csvContent.getBytes(StandardCharsets.UTF_8);
     }

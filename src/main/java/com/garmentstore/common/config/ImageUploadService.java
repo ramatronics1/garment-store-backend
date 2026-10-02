@@ -36,7 +36,7 @@ public class ImageUploadService {
 
     private final Optional<Cloudinary> cloudinary; // Optional — absent when disabled
 
-    @Value("${app.cloudinary.folder:vastra/products}")
+    @Value("${app.cloudinary.folder:selection/products}")
     private String uploadFolder;
 
     @Value("${app.cloudinary.enabled:false}")

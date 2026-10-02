@@ -27,4 +27,8 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
      * Example: "Shirts" or "shirts" or "SHIRTS" all resolve to the same category.
      */
     Optional<Category> findByNameIgnoreCase(String name);
+
+    Optional<Category> findBySlugIgnoreCaseAndActiveTrue(String slug);
+
+    Optional<Category> findByNameIgnoreCaseAndActiveTrue(String name);
 }

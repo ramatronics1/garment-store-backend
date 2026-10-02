@@ -85,7 +85,7 @@ public class AdminDashboardService {
                 .generatedAt(now)
                 .version("1.0")
                 .period(period)
-                .description("Vastra Admin Dashboard live analytics.")
+                .description("Selection Admin Dashboard live analytics.")
                 .build();
 
         return AdminDashboardResponse.builder()
@@ -492,7 +492,7 @@ public class AdminDashboardService {
     }
 
     private List<RecentOrder> computeRecentOrders() {
-        List<Order> orders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 10));
+        List<Order> orders = orderRepository.findRecentOrdersWithDetails(PageRequest.of(0, 5));
         List<RecentOrder> result = new ArrayList<>();
 
         for (Order o : orders) {

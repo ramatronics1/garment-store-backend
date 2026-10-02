@@ -160,7 +160,7 @@ public class NotificationController {
             case "ORDER_CANCELLED" -> "Order Cancelled";
             case "NEW_ORDER_ADMIN" -> "New Order Received";
             case "LOW_STOCK_ADMIN" -> "Low Stock Alert";
-            case "WELCOME"         -> "Welcome to Vastra!";
+            case "WELCOME"         -> "Welcome to Selection!";
             default                -> "Notification";
         };
     }

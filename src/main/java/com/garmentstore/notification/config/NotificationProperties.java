@@ -26,7 +26,7 @@ public class NotificationProperties {
 
     @Getter @Setter
     public static class Admin {
-        private String email = "admin@vastra.in";
+        private String email = "admin@selection.in";
         private String whatsapp = "";        // Admin WhatsApp E.164 number
     }
 

@@ -66,8 +66,10 @@ app:
     # Format: cloudinary://api_key:api_secret@cloud_name
     # Sign up free at https://cloudinary.com — 25 GB storage + CDN included
     url: ${CLOUDINARY_URL:}
-    folder: ${CLOUDINARY_FOLDER:vastra/products}
+    folder: ${CLOUDINARY_FOLDER:selection/products}
     enabled: ${CLOUDINARY_ENABLED:false}
+  site:
+    base-url: ${SITE_BASE_URL:https://selection.com}
 management:
   endpoints:
     web:
@@ -90,7 +92,7 @@ notification:
     enabled: ${NOTIFICATION_WHATSAPP_ENABLED:false}
   low-stock-threshold: ${LOW_STOCK_THRESHOLD:5}
   admin:
-    email: ${ADMIN_NOTIFICATION_EMAIL:admin@vastra.in}
+    email: ${ADMIN_NOTIFICATION_EMAIL:admin@selection.in}
     whatsapp: ${ADMIN_NOTIFICATION_WHATSAPP:}
   twilio:
     account-sid: ${TWILIO_ACCOUNT_SID:}
