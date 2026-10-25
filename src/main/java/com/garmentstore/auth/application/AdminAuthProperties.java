@@ -9,5 +9,12 @@ public record AdminAuthProperties(
         String bootstrapEmail,
         String bootstrapMobile,
         String bootstrapName,
-        String bootstrapPassword
-) {}
+        String bootstrapPassword,
+        int refreshTokenExpiryDays
+) {
+    public AdminAuthProperties {
+        if (refreshTokenExpiryDays <= 0) {
+            refreshTokenExpiryDays = 1;
+        }
+    }
+}

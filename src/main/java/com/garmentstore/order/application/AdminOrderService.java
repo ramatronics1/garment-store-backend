@@ -44,6 +44,8 @@ public class AdminOrderService {
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository historyRepository;
     private final ProductImageRepository productImageRepository;
+    private final com.garmentstore.catalog.infrastructure.ProductVariantRepository variantRepository;
+    private final com.garmentstore.inventory.application.AdminInventoryService inventoryService;
     private final ApplicationEventPublisher eventPublisher;
 
     // ── Allowed transitions ───────────────────────────────────────────────────
@@ -123,6 +125,10 @@ public class AdminOrderService {
 
         validateTransition(order.getStatus(), request.getStatus());
 
+        if (request.getStatus() == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.CANCELLED) {
+            restockOrderItems(order, adminId);
+        }
+
         order.setStatus(request.getStatus());
         order.setUpdatedAt(Instant.now());
         orderRepository.save(order);
@@ -173,6 +179,9 @@ public class AdminOrderService {
         for (Order order : orders) {
             try {
                 validateTransition(order.getStatus(), request.getStatus());
+                if (request.getStatus() == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.CANCELLED) {
+                    restockOrderItems(order, adminId);
+                }
                 order.setStatus(request.getStatus());
                 order.setUpdatedAt(Instant.now());
                 orderRepository.save(order);
@@ -204,6 +213,31 @@ public class AdminOrderService {
                 .failedIds(failedIds)
                 .message(message)
                 .build();
+    }
+
+    private void restockOrderItems(Order order, Long adminId) {
+        if (order.getItems() == null) return;
+        for (com.garmentstore.order.domain.OrderItem item : order.getItems()) {
+            com.garmentstore.catalog.domain.ProductVariant variant = item.getVariant();
+            if (variant != null) {
+                int prevStock = variant.getStockQuantity();
+                int newStock = prevStock + item.getQuantity();
+                variant.setStockQuantity(newStock);
+                variantRepository.save(variant);
+
+                inventoryService.recordTransaction(
+                        variant,
+                        prevStock,
+                        item.getQuantity(),
+                        newStock,
+                        com.garmentstore.inventory.domain.InventoryTransactionType.ORDER_CANCELLED_RESTOCK,
+                        "Order cancelled: #" + order.getOrderNumber(),
+                        order.getOrderNumber(),
+                        null,
+                        "Admin (#" + adminId + ")"
+                );
+            }
+        }
     }
 
     // ────────────────────────────────────────────────────────────────────────

@@ -196,6 +196,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      * Category revenue and order counts for non-cancelled orders.
      * Returns [Long categoryId, BigDecimal totalRevenue, Long orderCount]
      */
+    /**
+     * Category revenue and order counts for non-cancelled orders.
+     * Returns [Long categoryId, BigDecimal totalRevenue, Long orderCount]
+     */
     @Query("""
         SELECT p.category.id, SUM(i.price * CAST(i.quantity AS bigdecimal)), COUNT(DISTINCT o.id)
         FROM OrderItem i
@@ -206,5 +210,22 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         GROUP BY p.category.id
     """)
     List<Object[]> findCategoryRevenueAggregates();
+
+    /**
+     * Top selling variants by units sold (non-cancelled orders) in a time window.
+     * Returns [Long variantId, Long totalUnitsSold]
+     */
+    @Query("""
+        SELECT i.variant.id, SUM(i.quantity)
+        FROM OrderItem i
+        JOIN i.order o
+        WHERE o.status != com.garmentstore.order.domain.OrderStatus.CANCELLED
+          AND o.createdAt >= :since
+          AND i.variant IS NOT NULL
+        GROUP BY i.variant.id
+        ORDER BY SUM(i.quantity) DESC
+    """)
+    List<Object[]> findTopSellingVariantAggregatesSince(@Param("since") Instant since, Pageable pageable);
 }
+
 

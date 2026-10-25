@@ -26,8 +26,13 @@ public class RefreshTokenService {
 
     @Transactional
     public CreatedRefreshToken create(User user, String ipAddress, String userAgent) {
-        String rawToken = generateSecureToken();
         Instant expiresAt = Instant.now().plusSeconds(jwtProperties.refreshTokenExpiryDays() * 24 * 60 * 60);
+        return create(user, ipAddress, userAgent, expiresAt);
+    }
+
+    @Transactional
+    public CreatedRefreshToken create(User user, String ipAddress, String userAgent, Instant expiresAt) {
+        String rawToken = generateSecureToken();
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .tokenHash(tokenHashService.sha256(rawToken))
@@ -42,6 +47,12 @@ public class RefreshTokenService {
 
     @Transactional
     public TokenRotationResult rotate(String rawRefreshToken, String ipAddress, String userAgent) {
+        Instant defaultExpiresAt = Instant.now().plusSeconds(jwtProperties.refreshTokenExpiryDays() * 24 * 60 * 60);
+        return rotate(rawRefreshToken, ipAddress, userAgent, defaultExpiresAt);
+    }
+
+    @Transactional
+    public TokenRotationResult rotate(String rawRefreshToken, String ipAddress, String userAgent, Instant expiresAt) {
         String tokenHash = tokenHashService.sha256(rawRefreshToken);
         RefreshToken existing = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new BusinessException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED));
@@ -54,7 +65,7 @@ public class RefreshTokenService {
                 if (existing.getRevokedAt() != null && existing.getRevokedAt().isAfter(Instant.now().minusSeconds(30))) {
                     java.util.Optional<RefreshToken> replacementOpt = refreshTokenRepository.findById(existing.getReplacedByTokenId());
                     if (replacementOpt.isPresent() && replacementOpt.get().getStatus() == RefreshTokenStatus.ACTIVE) {
-                        return rotateTokenEntity(replacementOpt.get(), ipAddress, userAgent);
+                        return rotateTokenEntity(replacementOpt.get(), ipAddress, userAgent, expiresAt);
                     }
                 }
                 revokeAllForUserDueToTokenReuse(existing.getUser());
@@ -68,15 +79,15 @@ public class RefreshTokenService {
             throw new BusinessException("REFRESH_TOKEN_EXPIRED", "Refresh token has expired", HttpStatus.UNAUTHORIZED);
         }
 
-        return rotateTokenEntity(existing, ipAddress, userAgent);
+        return rotateTokenEntity(existing, ipAddress, userAgent, expiresAt);
     }
 
-    private TokenRotationResult rotateTokenEntity(RefreshToken tokenToRotate, String ipAddress, String userAgent) {
+    private TokenRotationResult rotateTokenEntity(RefreshToken tokenToRotate, String ipAddress, String userAgent, Instant expiresAt) {
         tokenToRotate.setStatus(RefreshTokenStatus.REVOKED);
         tokenToRotate.setRevokedAt(Instant.now());
         RefreshToken savedExisting = refreshTokenRepository.save(tokenToRotate);
 
-        CreatedRefreshToken created = create(tokenToRotate.getUser(), ipAddress, userAgent);
+        CreatedRefreshToken created = create(tokenToRotate.getUser(), ipAddress, userAgent, expiresAt);
         savedExisting.setReplacedByTokenId(created.id());
         refreshTokenRepository.save(savedExisting);
 

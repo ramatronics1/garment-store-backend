@@ -438,6 +438,7 @@ public class CatalogService {
         // Distinct colors, preserving display order
         List<ColorSwatchResponse> swatches = activeVars.stream()
                 .map(ProductVariant::getColor)
+                .filter(java.util.Objects::nonNull)
                 .collect(Collectors.collectingAndThen(
                         Collectors.toMap(Color::getId, c -> c, (a, b) -> a, java.util.LinkedHashMap::new),
                         map -> map.values().stream()
@@ -445,7 +446,12 @@ public class CatalogService {
                                 .toList()));
 
         List<SizeStockResponse> sizes = activeVars.stream()
-                .map(v -> new SizeStockResponse(v.getId(), v.getSize().getSizeCode(), v.getStockQuantity(), v.getSellingPrice(), v.getMrp()))
+                .map(v -> new SizeStockResponse(
+                        v.getId(),
+                        v.getSize() != null ? v.getSize().getSizeCode() : "",
+                        v.getStockQuantity(),
+                        v.getSellingPrice(),
+                        v.getMrp()))
                 .toList();
 
         boolean inStock = activeVars.stream().anyMatch(v -> v.getStockQuantity() > 0);
@@ -468,8 +474,13 @@ public class CatalogService {
         List<ProductVariantResponse> variantResponses = allVars.stream()
                 .map(v -> new ProductVariantResponse(
                         v.getId(),
-                        v.getColor().getId(), v.getColor().getName(), v.getColor().getCode(), v.getColor().getHexCode(),
-                        v.getSize().getId(), v.getSize().getName(), v.getSize().getSizeCode(),
+                        v.getColor() != null ? v.getColor().getId() : null,
+                        v.getColor() != null ? v.getColor().getName() : "",
+                        v.getColor() != null ? v.getColor().getCode() : "",
+                        v.getColor() != null ? v.getColor().getHexCode() : "",
+                        v.getSize() != null ? v.getSize().getId() : null,
+                        v.getSize() != null ? v.getSize().getName() : "",
+                        v.getSize() != null ? v.getSize().getSizeCode() : "",
                         v.getSku(),
                         v.getMrp(), v.getSellingPrice(), v.getDiscountPercent(),
                         v.getStockQuantity(), v.getCombinationKey(), v.getStatus(), v.isActive()))

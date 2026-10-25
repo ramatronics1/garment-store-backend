@@ -34,11 +34,13 @@ import java.util.List;
         OtpProperties.class,
         PasswordResetProperties.class,
         GuestSessionProperties.class,
-        AdminAuthProperties.class
+        AdminAuthProperties.class,
+        RateLimitProperties.class
 })
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CorrelationIdFilter correlationIdFilter;
+    private final com.garmentstore.common.filter.RateLimitFilter rateLimitFilter;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     private final RestAccessDeniedHandler restAccessDeniedHandler;
@@ -87,6 +89,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasAnyRole(SecurityConstants.ROLE_ADMIN, SecurityConstants.ROLE_SUPER_ADMIN)
                         .anyRequest().authenticated())
                 .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(rateLimitFilter, CorrelationIdFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

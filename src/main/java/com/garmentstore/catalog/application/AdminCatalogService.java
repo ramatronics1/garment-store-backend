@@ -748,10 +748,19 @@ public class AdminCatalogService {
 
 
     private AdminVariantResponse toVariantResponse(ProductVariant v) {
+        Long colorId = v.getColor() != null ? v.getColor().getId() : null;
+        String colorName = v.getColor() != null ? v.getColor().getName() : "";
+        String colorCode = v.getColor() != null ? v.getColor().getCode() : "";
+        String colorHex = v.getColor() != null ? v.getColor().getHexCode() : "";
+
+        Long sizeId = v.getSize() != null ? v.getSize().getId() : null;
+        String sizeName = v.getSize() != null ? v.getSize().getName() : "";
+        String sizeCode = v.getSize() != null ? v.getSize().getSizeCode() : "";
+
         return new AdminVariantResponse(
                 v.getId(),
-                v.getColor().getId(), v.getColor().getName(), v.getColor().getCode(), v.getColor().getHexCode(),
-                v.getSize().getId(), v.getSize().getName(), v.getSize().getSizeCode(),
+                colorId, colorName, colorCode, colorHex,
+                sizeId, sizeName, sizeCode,
                 v.getSku(), v.getBarcode(),
                 v.getMrp(), v.getSellingPrice(), v.getCostPrice(), v.getDiscountPercent(),
                 v.getStockQuantity(), v.getWeightGrams(), v.getCombinationKey(), v.getStatus(), v.isActive());

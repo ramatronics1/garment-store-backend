@@ -57,11 +57,16 @@ app:
       expiry-days: ${GUEST_SESSION_EXPIRY_DAYS:30}
     admin:
       lockout-threshold: ${ADMIN_LOCKOUT_THRESHOLD:5}
+      refresh-token-expiry-days: ${ADMIN_REFRESH_TOKEN_EXPIRY_DAYS:1}
       bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
       bootstrap-email: ${ADMIN_BOOTSTRAP_EMAIL:admin@garmentstore.local}
       bootstrap-mobile: ${ADMIN_BOOTSTRAP_MOBILE:9999999999}
       bootstrap-name: ${ADMIN_BOOTSTRAP_NAME:Store Admin}
       bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:Admin@12345}
+    rate-limit:
+      enabled: ${RATE_LIMIT_ENABLED:true}
+      admin-login-rpm: ${RATE_LIMIT_ADMIN_LOGIN_RPM:10}
+      auth-login-rpm: ${RATE_LIMIT_AUTH_LOGIN_RPM:20}
   cloudinary:
     # Format: cloudinary://api_key:api_secret@cloud_name
     # Sign up free at https://cloudinary.com — 25 GB storage + CDN included

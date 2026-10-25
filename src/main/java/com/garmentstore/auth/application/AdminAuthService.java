@@ -69,13 +69,15 @@ public class AdminAuthService {
         loginAttemptService.record(user, identifier, LoginAttemptType.ADMIN_LOGIN, true, ipAddress, userAgent);
             auditLogService.record(user.getId(), "ADMIN", "ADMIN_LOGIN_SUCCESS", "USER", String.valueOf(user.getId()), null, ipAddress);
 
-        RefreshTokenService.CreatedRefreshToken refresh = refreshTokenService.create(user, ipAddress, userAgent);
+        Instant refreshExpiresAt = Instant.now().plusSeconds(adminAuthProperties.refreshTokenExpiryDays() * 24L * 60L * 60L);
+        RefreshTokenService.CreatedRefreshToken refresh = refreshTokenService.create(user, ipAddress, userAgent, refreshExpiresAt);
         return buildTokenResponse(user, refresh.rawToken(), refresh.expiresAt());
     }
 
     @Transactional
     public AuthTokenResponse refresh(RefreshTokenRequest request, String ipAddress, String userAgent) {
-        RefreshTokenService.TokenRotationResult rotation = refreshTokenService.rotate(request.refreshToken(), ipAddress, userAgent);
+        Instant refreshExpiresAt = Instant.now().plusSeconds(adminAuthProperties.refreshTokenExpiryDays() * 24L * 60L * 60L);
+        RefreshTokenService.TokenRotationResult rotation = refreshTokenService.rotate(request.refreshToken(), ipAddress, userAgent, refreshExpiresAt);
         User user = rotation.user();
         validateAdminLoginAllowed(user);
         return buildTokenResponse(user, rotation.rawRefreshToken(), rotation.refreshTokenExpiresAt());

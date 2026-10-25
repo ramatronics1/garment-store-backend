@@ -46,6 +46,7 @@ public class OrderService {
     private final AddressRepository addressRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductImageRepository productImageRepository;
+    private final com.garmentstore.inventory.application.AdminInventoryService inventoryService;
     
     private final SecureRandom secureRandom = new SecureRandom();
     private final ApplicationEventPublisher eventPublisher;
@@ -80,9 +81,23 @@ public class OrderService {
                 throw new BusinessException("INSUFFICIENT_STOCK", "Not enough stock for variant " + variant.getSku(), HttpStatus.BAD_REQUEST);
             }
             // Decrement stock
-            int newStock = variant.getStockQuantity() - cartItem.getQuantity();
+            int prevStock = variant.getStockQuantity();
+            int newStock = prevStock - cartItem.getQuantity();
             variant.setStockQuantity(newStock);
             productVariantRepository.save(variant);
+
+            // Record inventory transaction audit
+            inventoryService.recordTransaction(
+                    variant,
+                    prevStock,
+                    -cartItem.getQuantity(),
+                    newStock,
+                    com.garmentstore.inventory.domain.InventoryTransactionType.ORDER_FULFILLMENT,
+                    "Order placed: #" + order.getOrderNumber(),
+                    order.getOrderNumber(),
+                    user,
+                    user.getName() != null ? user.getName() : "Customer (Checkout)"
+            );
 
             // Alert admin if stock has dropped to or below the low-stock threshold
             if (newStock <= properties.getLowStockThreshold()) {
